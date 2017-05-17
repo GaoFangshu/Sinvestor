@@ -5,29 +5,33 @@ import re
 import pandas as pd
 from datetime import datetime
 
+
 def unique_element(raw_column):
     ele_list = []
     ele = []
-    for i in range(len(raw_column)-1):
-        ind_string = np.array_str(raw_column[i+1])
-        elements = re.split(r'\[\s\'|\'\]|,|\[\'', ind_string) # 可能不太完全
-        ele_list.append(elements[1:len(elements)-1])
-        ele.extend(elements[1:len(elements)-1])
+    for i in range(len(raw_column) - 1):
+        ind_string = np.array_str(raw_column[i + 1])
+        elements = re.split(r'\[\s\'|\'\]|,|\[\'', ind_string)  # 可能不太完全
+        ele_list.append(elements[1:len(elements) - 1])
+        ele.extend(elements[1:len(elements) - 1])
         unique_ele = list(set(ele))
     return [ele_list, unique_ele]
 
+
 def set_dummy(ele_list, unique_ele):
     dummy_array = np.zeros((len(ele_list), len(unique_ele)))
-    for i in range(len(ele_list)): # for each investor
-        for j in range(len(ele_list[i])): # for each industry of the investor
+    for i in range(len(ele_list)):  # for each investor
+        for j in range(len(ele_list[i])):  # for each industry of the investor
             dummy_array[i][unique_ele.index(ele_list[i][j])] = 1
     return dummy_array
 
+
 def set_dummy_1c(ele_list, unique_ele):
     dummy_array = np.zeros((len(ele_list), len(unique_ele)))
-    for i in range(len(ele_list)): # for each investor
+    for i in range(len(ele_list)):  # for each investor
         dummy_array[i][unique_ele.index(ele_list[i])] = 1
     return dummy_array
+
 
 def set_dummy_series(data, title):
     title_unique_ele = data[title].unique().tolist()
@@ -35,6 +39,7 @@ def set_dummy_series(data, title):
     dummy = set_dummy_1c(title_ele_list, title_unique_ele)
     print(dummy.shape)
     return dummy
+
 
 def set_dummy_dataframe(data, title_list):
     title_data = pd.Series()
@@ -45,6 +50,7 @@ def set_dummy_dataframe(data, title_list):
     dummy = set_dummy(title_ele_list, title_unique_ele)  # (6595, 18)
     print(dummy.shape)
     return dummy
+
 
 def replace_money(rawdata, title):
     # for k in range(len(rawdata)):
@@ -108,9 +114,11 @@ def replace_money(rawdata, title):
             q = int(float(q) * 90000)
             rawdata.loc[k, title] = int(q)
 
+
 def del_whitespace(data, title):
     for k in range(len(data)):
         data.loc[k, title].replace(' ', '')
+
 
 def invest_days(data, title_date_now, title_date_past):
     days = []
@@ -152,20 +160,19 @@ def get_invest_data():
     #     投资项目名称、投资项目行业分类、投资项目投资阶段、投资项目投资资金、投资项目投资时间：行业转转dummy，各变量统计
     #     退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转转dummy，各变量统计
 
-    invest_list = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding= 'gbk')
+    invest_list = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')
 
     count = 0
 
-
-    raw_data_invest = np.asarray(invest_list).reshape(count,int(len(invest_list)/count))
+    raw_data_invest = np.asarray(invest_list).reshape(count, int(len(invest_list) / count))
     raw_data_invest.shape
     title_invest = raw_data_invest[0]
-    data_invest = raw_data_invest[:,[a1 or a2 or a3 or a4 for a1,a2,a3,a4 in zip(title_invest == '\ufeffid_vc',
-                                                 title_invest == 'name_firm',
-                                                 title_invest == 'industry_vc',
-                                                 title_invest == 'round_vc')]] # choose columns
-    invindustry = raw_data_invest[:,title_invest == 'industry_vc'] # choose columns
-    invround = raw_data_invest[:,title_invest == 'round_vc']
+    data_invest = raw_data_invest[:, [a1 or a2 or a3 or a4 for a1, a2, a3, a4 in zip(title_invest == '\ufeffid_vc',
+                                                                                     title_invest == 'name_firm',
+                                                                                     title_invest == 'industry_vc',
+                                                                                     title_invest == 'round_vc')]]  # choose columns
+    invindustry = raw_data_invest[:, title_invest == 'industry_vc']  # choose columns
+    invround = raw_data_invest[:, title_invest == 'round_vc']
 
     invindustry_elements = unique_element(invindustry)
     dummy_invindustry = set_dummy(invindustry_elements[0], invindustry_elements[1])
@@ -173,9 +180,10 @@ def get_invest_data():
     invround_elements = unique_element(invround)
     dummy_invround = set_dummy(invround_elements[0], invround_elements[1])
 
-    data_invest_new = np.concatenate([data_invest[1:, [0, 1]], dummy_invindustry, dummy_invround], axis = 1)[:,1:]
-    data_invest_new.shape # 6590(2592 unique)
+    data_invest_new = np.concatenate([data_invest[1:, [0, 1]], dummy_invindustry, dummy_invround], axis=1)[:, 1:]
+    data_invest_new.shape  # 6590(2592 unique)
     return data_invest_new
+
 
 # ------------------- Companies data -------------------
 def get_company_data():
@@ -218,30 +226,29 @@ def get_company_data():
     replace_money(rawdata, '融资额度2')
     replace_money(rawdata, '融资额度3')
     replace_money(rawdata, '融资额度4')
-    money_total = (rawdata['融资额度2'] + rawdata['融资额度3'] + rawdata['融资额度4']).values # .reshape(rawdata.shape[0], 1)
+    money_total = (rawdata['融资额度2'] + rawdata['融资额度3'] + rawdata['融资额度4']).values  # .reshape(rawdata.shape[0], 1)
     money_total = money_total / money_total.max()
 
     # round of raise
-    dummy_round = set_dummy_dataframe(rawdata, ['融资轮次1','融资轮次2','融资轮次3','融资轮次4']) # (6595, 18)
+    dummy_round = set_dummy_dataframe(rawdata, ['融资轮次1', '融资轮次2', '融资轮次3', '融资轮次4'])  # (6595, 18)
 
     # industry dummies
-    dummy_industry1 = set_dummy_series(rawdata, '行业标签') # (6595, 17)
-    dummy_industry2 = set_dummy_series(rawdata, '细分标签') # (6595, 156)
+    dummy_industry1 = set_dummy_series(rawdata, '行业标签')  # (6595, 17)
+    dummy_industry2 = set_dummy_series(rawdata, '细分标签')  # (6595, 156)
     dummy_industry3 = set_dummy_dataframe(rawdata, ['橘子标签1', '橘子标签2', '橘子标签3', '橘子标签4', '橘子标签5',
-                                                    '橘子标签6', '橘子标签7', '橘子标签8', '橘子标签9', '橘子标签10']) # (6595, 824)
-    dummy_type = set_dummy_series(rawdata,'公司类型') # (6595, 82)
+                                                    '橘子标签6', '橘子标签7', '橘子标签8', '橘子标签9', '橘子标签10'])  # (6595, 824)
+    dummy_type = set_dummy_series(rawdata, '公司类型')  # (6595, 82)
 
     # investor dummies
     dummy_investors = set_dummy_dataframe(rawdata, ['投资人2,1', '投资人2,2', '投资人2,3', '投资人2,4',
                                                     '投资人3,1', '投资人3,2', '投资人3,3', '投资人3,4',
-                                                    '投资人4,1', '投资人4,2', '投资人4,3', '投资人4,4']) # (6595, 701)/(6595, 1456)
+                                                    '投资人4,1', '投资人4,2', '投资人4,3', '投资人4,4'])  # (6595, 701)/(6595, 1456)
 
     # days from last investment
     days = np.array(invest_days(rawdata, '融资时间1', '融资时间2'))
     days = days / days.max()
 
-
-    companies_data = np.concatenate([rawdata[['项目key值','项目名称','投资人1,1', '投资人1,2', '投资人1,3', '投资人1,4']].values,
+    companies_data = np.concatenate([rawdata[['项目key值', '项目名称', '投资人1,1', '投资人1,2', '投资人1,3', '投资人1,4']].values,
                                      money_total.reshape(len(rawdata), 1), dummy_round,
                                      dummy_industry1, dummy_industry2, dummy_industry3, dummy_type, dummy_investors,
                                      days.reshape(len(rawdata), 1)], axis=1)
