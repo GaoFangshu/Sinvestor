@@ -19,8 +19,7 @@ def unique_element(raw_column):
 
 def set_dummy(column, name, sep = r'\s', delete = True, delete_name = '-'):
 # split string to elements and get dummy variables, sep = \s
-    f_split = lambda x: re.split(sep, x)
-    s = column.apply(f_split)
+    s = column.apply(lambda x: re.split(sep, x))
     if delete:
         return pd.get_dummies(s.apply(pd.Series).stack(), prefix='dummy_' + name).sum(level=0)\
             .drop('dummy_' + name + '_' + delete_name, axis = 1)
@@ -30,16 +29,45 @@ def set_dummy(column, name, sep = r'\s', delete = True, delete_name = '-'):
         # column.apply(f_split).str.join(sep='*').str.get_dummies(sep='*')    # http://stackoverflow.com/questions/18889588/create-dummies-from-column-with-multiple-values-in-pandas
 
 
-def invest_days(data, title_date_now, title_date_past):
+def get_nth_investment(n, col_name, num, data):
+# get data of nth investment, n = 1 for latest round
+    col = []
+    for i in range(num):
+        col_n = col_name + str(i + 1)
+        col.append(col_n)
+    nb_rounds = (data[col] != '-').sum(axis=1)
+    s1 = nb_rounds.apply(lambda x: col[x - n])    # latest round
+    s2 = s1
+    for j in range(len(s1)):
+        s2.iloc[j] = data[s1.iloc[j]].iloc[j]
+    s2 = s2.astype(str)
+    return s2
+
+
+def correct_date(column):
+# get correct date format
+    s = column.apply(lambda x: x[0:10])
+    return s
+
+
+def invest_days(column_date_now, column_date_past):
+# calculate time delta
+    column_date_past[column_date_past == '-'] = column_date_now[column_date_past == '-']
+    column_date_past = pd.to_datetime(correct_date(column_date_past))
+    column_date_now = pd.to_datetime(correct_date(column_date_now))
+    return column_date_now - column_date_past
+
+
     days = []
     for i in range(len(data)):
-        if data[title_date_past][i] == '无记录':
+        if data[column_date_past][i] == '无记录':
             days.extend([0.0])
         else:
-            timedelta = datetime.strptime(data[title_date_now][i], '%Y.%m.%d') - datetime.strptime(
-                data[title_date_past][i], '%Y.%m.%d')
+            timedelta = datetime.strptime(data[column_date_now][i], '%Y.%m.%d') - datetime.strptime(
+                data[column_date_past][i], '%Y.%m.%d')
             days.extend([timedelta.total_seconds() / 3600 / 24 / 365])
     return days
+
 
 
 # check if a is in b, and make a dummy column
@@ -60,7 +88,7 @@ IT橘子创业公司信息：
     TODO: 成立时间：（公司成立时间非项目成立时间），计算距项目时间  bug如：2009.70
     公司规模：获得数据(人)，转dummy
     TODO: 经营状态：转dummy  全部当作“运营中”，不处理
-    获投时间15、获投轮次15、获投金额15、投资机构15：按照原来的来
+    获投时间15、获投轮次15、获投金额15、投资机构15：用“获投轮次2”转dummy，用“获投金额2”转金额，其余交叉时再算
     （项目方 - 资金方交叉变量）成员姓名12、成员职务12、人物简介12、创业经历12、工作经历12、教育经历12
     注册资金：币种问题、换算问题
     股东信息：获得数据(人)
@@ -76,18 +104,30 @@ IT橘子雷达公司估值：
 """
 # def get_company_data():
 rawdata_itjuzi = pd.read_csv('./data/IT橘子创业公司信息.txt', sep='\t', encoding='gbk')    # 54858 rows x 150 columns
+data_itjuzi = rawdata_itjuzi[rawdata_itjuzi['投资机构1'] != '-']    # 19836 rows x 150 columns
 rawdata_leida = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
 
-dummy_round = pd.get_dummies(rawdata_itjuzi['项目名后轮次'], prefix='dummy_项目名后轮次')\
-    .drop('dummy_项目名后轮次_获投状态：不明确', axis = 1)    # 54858 rows x 17 columns
-dummy_class_first = pd.get_dummies(rawdata_itjuzi['一级分类'], prefix='dummy_一级分类')    # 54858 rows x 18 columns
-dummy_class_second = pd.get_dummies(rawdata_itjuzi['二级分类'], prefix='dummy_二级分类')\
-    .drop('dummy_二级分类_-', axis = 1)    # 54858 rows x 187 columns
-dummy_tag = set_dummy(rawdata_itjuzi['tag'], 'tag')    # 54858 rows x 1081 columns
-dummy_numemp = pd.get_dummies(rawdata_itjuzi['公司规模'], prefix='dummy_公司规模')\
-    .drop(['dummy_公司规模_暂未收录', 'dummy_公司规模_不明确'], axis = 1)    # 54858 rows x 11 columns
+dummy_round = pd.get_dummies(data_itjuzi['项目名后轮次'], prefix='dummy_项目名后轮次')\
+    .drop('dummy_项目名后轮次_获投状态：不明确', axis = 1)    # 19836 rows x 17 columns
+dummy_class_first = pd.get_dummies(data_itjuzi['一级分类'], prefix='dummy_一级分类')    # 19836 rows x 18 columns
+dummy_class_second = pd.get_dummies(data_itjuzi['二级分类'], prefix='dummy_二级分类')\
+    .drop('dummy_二级分类_-', axis = 1)    # 19836 rows x 181 columns
+dummy_tag = set_dummy(data_itjuzi['tag'], 'tag')    # 19836 rows x 1049 columns
+dummy_numemp = pd.get_dummies(data_itjuzi['公司规模'], prefix='dummy_公司规模')\
+    .drop(['dummy_公司规模_暂未收录', 'dummy_公司规模_不明确'], axis = 1)    # 19836 rows x 11 columns
+dummy_invested = (data_itjuzi['获投时间2'] != '-').astype(int)    # whether have been invested before, 1 for yes
 
 
+time_round_last = get_nth_investment(2, '获投时间', 15, data_itjuzi)
+time_round_now = get_nth_investment(1, '获投时间', 15, data_itjuzi)
+
+invest_days(time_round_now, time_round_last)
+correct_date(time_round_last)
+
+
+
+dummy_lastround =  pd.get_dummies(data_itjuzi['获投轮次2'], prefix='dummy_获投轮次2')\
+    .drop('dummy_获投轮次2_不明确', axis = 1)    # 19836 rows x 17 columns
 
 
 # IT橘子创投公司数据：
