@@ -58,128 +58,121 @@ def invest_days(column_date_now, column_date_past):
     return column_date_now - column_date_past
 
 
-    days = []
-    for i in range(len(data)):
-        if data[column_date_past][i] == '无记录':
-            days.extend([0.0])
-        else:
-            timedelta = datetime.strptime(data[column_date_now][i], '%Y.%m.%d') - datetime.strptime(
-                data[column_date_past][i], '%Y.%m.%d')
-            days.extend([timedelta.total_seconds() / 3600 / 24 / 365])
-    return days
-
-
-def replace_money(column):
-    for k in range(len(column)):
-        if '亿元及以上人民币' in column.iloc[k]:
-            column.iloc[k] = int(10000)
-        elif '亿元及以上美元' in column.iloc[k]:
-            column.iloc[k] = int(70000)
-        elif '亿元及以上港元' in column.iloc[k]:
-            column.iloc[k] = int(9000)
-        elif '数十万人民币' in column.iloc[k]:
-            column.iloc[k] = int(50)
-        elif '数十万美元' in column.iloc[k]:
-            column.iloc[k] = int(350)
-        elif '数百万人民币' in column.iloc[k]:
-            column.iloc[k] = int(500)
-        elif '数百万美元' in column.iloc[k]:
-            column.iloc[k] = int(3500)
-        elif '数千万人民币' in column.iloc[k]:
-            column.iloc[k] = int(5000)
-        elif '数千万美元' in column.iloc[k]:
-            column.iloc[k] = int(35000)
-        elif '数千万新台币' in column.iloc[k]:
-            column.iloc[k] = int(1000)
-        elif '数千万港元' in column.iloc[k]:
-            column.iloc[k] = int(4500)
-        elif '其他' in column.iloc[k]:
-            column.iloc[k] = int(0)
-        elif '未透露' in column.iloc[k]:
-            column.iloc[k] = int(0)
-        elif '无记录' in column.iloc[k]:
-            column.iloc[k] = int(0)
-        elif '万人民币' in column.iloc[k]:
-            q = column.iloc[k].replace('万人民币', '')
-            column.iloc[k] = int(q)
-        elif '亿元人民币' in column.iloc[k]:
-            q = column.iloc[k].replace('亿元人民币', '')
-            q = int(float(q) * 10000)
-            column.iloc[k] = int(q)
-        elif '亿人民币' in column.iloc[k]:
-            q = column.iloc[k].replace('亿人民币', '')
-            q = int(float(q) * 10000)
-            column.iloc[k] = int(q)
-        elif '万美元' in column.iloc[k]:
-            q = column.iloc[k].replace('万美元', '')
-            q = int(float(q) * 7)
-            column.iloc[k] = int(q)
-        elif '亿美元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿美元', '')
-            q = int(float(q) * 70000)
-            column.iloc[k] = int(q)
-        elif '亿元美元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿元美元', '')
-            q = int(float(q) * 70000)
-            column.iloc[k] = int(q)
-        elif '万新台币' in column.iloc[k]:
-            q = column.iloc[k].replace('万新台币', '')
-            q = int(float(q) * 0.2)
-            column.iloc[k] = int(q)
-        elif '亿新台币' in column.iloc[k]:
-            q = column.iloc[k].replace('亿新台币', '')
-            q = int(float(q) * 2000)
-            column.iloc[k] = int(q)
-        elif '亿港元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿港元', '')
-            q = int(float(q) * 9000)
-            column.iloc[k] = int(q)
-        elif '亿元港元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿元港元', '')
-            q = int(float(q) * 9000)
-            column.iloc[k] = int(q)
-        elif '万港元' in column.iloc[k]:
-            q = column.iloc[k].replace('万港元', '')
-            q = int(float(q) * 0.9)
-            column.iloc[k] = int(q)
-        elif '万英镑' in column.iloc[k]:
-            q = column.iloc[k].replace('万英镑', '')
-            q = int(float(q) * 9)
-            column.iloc[k] = int(q)
-        elif '亿英镑' in column.iloc[k]:
-            q = column.iloc[k].replace('亿英镑', '')
-            q = int(float(q) * 90000)
-            column.iloc[k] = int(q)
-        elif '万欧元' in column.iloc[k]:
-            q = column.iloc[k].replace('万欧元', '')
-            q = int(float(q) * 7.7)
-            column.iloc[k] = int(q)
-        elif '亿欧元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿欧元', '')
-            q = int(float(q) * 77000)
-            column.iloc[k] = int(q)
-        elif '亿卢比' in column.iloc[k]:
-            q = column.iloc[k].replace('亿卢比', '')
-            q = int(float(q) * 1068)
-            column.iloc[k] = int(q)
-        elif '万卢比' in column.iloc[k]:
-            q = column.iloc[k].replace('万卢比', '')
-            q = int(float(q) * 0.1068)
-            column.iloc[k] = int(q)
-        elif '亿日元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿日元', '')
-            q = int(float(q) * 619)
-            column.iloc[k] = int(q)
-        elif '亿元日元' in column.iloc[k]:
-            q = column.iloc[k].replace('亿元日元', '')
-            q = int(float(q) * 619)
-            column.iloc[k] = int(q)
-        elif '万日元' in column.iloc[k]:
-            q = column.iloc[k].replace('万日元', '')
-            q = int(float(q) * 0.0619)
-            column.iloc[k] = int(q)
-    return column
-
+def replace_money(x):
+    if '亿元及以上人民币' in x:
+        q = int(10000)
+    elif '亿元及以上美元' in x:
+        q = int(70000)
+    elif '亿元及以上港元' in x:
+        q = int(9000)
+    elif '数十万人民币' in x:
+        q = int(50)
+    elif '数十万美元' in x:
+        q = int(350)
+    elif '数百万人民币' in x:
+        q = int(500)
+    elif '数百万美元' in x:
+        q = int(3500)
+    elif '数千万人民币' in x:
+        q = int(5000)
+    elif '数千万美元' in x:
+        q = int(35000)
+    elif '数千万新台币' in x:
+        q = int(1000)
+    elif '数千万港元' in x:
+        q = int(4500)
+    elif '其他' in x:
+        q = int(0)
+    elif '未透露' in x:
+        q = int(0)
+    elif '无记录' in x:
+        q = int(0)
+    elif '-' in x:
+        q = int(0)
+    elif '万人民币' in x:
+        q = x.replace('万人民币', '')
+        q = int(q)
+    elif '亿元人民币' in x:
+        q = x.replace('亿元人民币', '')
+        q = int(float(q) * 10000)
+        q = int(q)
+    elif '亿人民币' in x:
+        q = x.replace('亿人民币', '')
+        q = int(float(q) * 10000)
+        q = int(q)
+    elif '万美元' in x:
+        q = x.replace('万美元', '')
+        q = int(float(q) * 7)
+        q = int(q)
+    elif '亿美元' in x:
+        q = x.replace('亿美元', '')
+        q = int(float(q) * 70000)
+        q = int(q)
+    elif '亿元美元' in x:
+        q = x.replace('亿元美元', '')
+        q = int(float(q) * 70000)
+        q = int(q)
+    elif '万新台币' in x:
+        q = x.replace('万新台币', '')
+        q = int(float(q) * 0.2)
+        q = int(q)
+    elif '亿新台币' in x:
+        q = x.replace('亿新台币', '')
+        q = int(float(q) * 2000)
+        q = int(q)
+    elif '亿港元' in x:
+        q = x.replace('亿港元', '')
+        q = int(float(q) * 9000)
+        q = int(q)
+    elif '亿元港元' in x:
+        q = x.replace('亿元港元', '')
+        q = int(float(q) * 9000)
+        q = int(q)
+    elif '万港元' in x:
+        q = x.replace('万港元', '')
+        q = int(float(q) * 0.9)
+        q = int(q)
+    elif '万英镑' in x:
+        q = x.replace('万英镑', '')
+        q = int(float(q) * 9)
+        q = int(q)
+    elif '亿英镑' in x:
+        q = x.replace('亿英镑', '')
+        q = int(float(q) * 90000)
+        q = int(q)
+    elif '万欧元' in x:
+        q = x.replace('万欧元', '')
+        q = int(float(q) * 7.7)
+        q = int(q)
+    elif '亿欧元' in x:
+        q = x.replace('亿欧元', '')
+        q = int(float(q) * 77000)
+        q = int(q)
+    elif '亿卢比' in x:
+        q = x.replace('亿卢比', '')
+        q = int(float(q) * 1068)
+        q = int(q)
+    elif '万卢比' in x:
+        q = x.replace('万卢比', '')
+        q = int(float(q) * 0.1068)
+        q = int(q)
+    elif '亿日元' in x:
+        q = x.replace('亿日元', '')
+        q = int(float(q) * 619)
+        q = int(q)
+    elif '亿元日元' in x:
+        q = x.replace('亿元日元', '')
+        q = int(float(q) * 619)
+        q = int(q)
+    elif '万日元' in x:
+        q = x.replace('万日元', '')
+        q = int(float(q) * 0.0619)
+        q = int(q)
+    elif x == '万':
+        q = 0
+    else:
+        return x
+    return q
 
 # check if a is in b, and make a dummy column
 # def dummy_check(a, b):
@@ -231,11 +224,11 @@ dummy_invested = (data_itjuzi['获投时间2'] != '-').astype(int)    # whether 
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
                             get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')    # years from last investment
 get_nth_investment(1, '获投金额', 15, data_itjuzi).value_counts()
-invested_amount = replace_money(get_nth_investment(1, '获投金额', 15, data_itjuzi))
+invested_amount = get_nth_investment(1, '获投金额', 15, data_itjuzi).apply(replace_money)
 dummy_round =  pd.get_dummies(data_itjuzi['获投轮次2'], prefix='dummy_获投轮次2')\
     .drop('dummy_获投轮次2_不明确', axis = 1)    # 19836 rows x 17 columns
-regi_money = data_itjuzi['注册资金']
-replace_money(regi_money)
+regi_money = data_itjuzi['注册资金'].apply(replace_money)
+
 
 # IT橘子创投公司数据：
 #     id：主键
