@@ -28,7 +28,6 @@ def unique_element(raw_column):
         unique_ele = list(set(ele))
     return [ele_list, unique_ele]
 
-
 def set_dummy(column, name, sep = r'\s', delete = True, delete_name = '-'):
 # split string to elements and get dummy variables, sep = \s
     s = column.apply(lambda x: re.split(sep, x))
@@ -39,7 +38,6 @@ def set_dummy(column, name, sep = r'\s', delete = True, delete_name = '-'):
         return pd.get_dummies(s.apply(pd.Series).stack(), prefix='dummy_' + name).sum(level=0)    # http://stackoverflow.com/questions/29034928/pandas-convert-a-column-of-list-to-dummies
         # another but slower way:
         # column.apply(f_split).str.join(sep='*').str.get_dummies(sep='*')    # http://stackoverflow.com/questions/18889588/create-dummies-from-column-with-multiple-values-in-pandas
-
 
 def get_nth_investment(n, col_name, num, data):
 # get data of nth investment, n = 1 for latest round
@@ -55,12 +53,10 @@ def get_nth_investment(n, col_name, num, data):
     s2 = s2.astype(str)
     return s2
 
-
 def correct_date(column):
 # get correct date format
     s = column.apply(lambda x: x[0:10])
     return s
-
 
 def invest_days(column_date_now, column_date_past):
 # calculate time delta
@@ -70,7 +66,6 @@ def invest_days(column_date_now, column_date_past):
     column_date_past = pd.to_datetime(correct_date(column_date_past))
     column_date_now = pd.to_datetime(correct_date(column_date_now))
     return column_date_now - column_date_past
-
 
 def replace_money(x):
     if '亿元及以上人民币' in x:
@@ -188,6 +183,18 @@ def replace_money(x):
         return x
     return q
 
+def get_deltaday(string_date):
+    if '年' in string_date:
+        year = int(re.search(r'(\d+)年', string_date).group(1))
+    else:
+        year = 0
+    if '个月' in string_date:
+        month = int(re.search(r'(\d+)个月', string_date).group(1))
+    else:
+        month = 0
+    delta = year * 365 + month * 30.4
+    return delta
+
 # check if a is in b, and make a dummy column
 # def dummy_check(a, b):
 
@@ -224,7 +231,7 @@ IT橘子雷达公司估值：
 # def get_company_data():
 rawdata_itjuzi = pd.read_csv('./data/IT橘子创业公司信息.txt', sep='\t', encoding='gbk')    # 54858 rows x 150 columns
 data_itjuzi = rawdata_itjuzi[rawdata_itjuzi['投资机构1'] != '-']    # 19836 rows x 150 columns
-rawdata_leida = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
+rawdata_radar = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
 
 # generate variables
 dummy_round = pd.get_dummies(data_itjuzi['项目名后轮次'], prefix='dummy_项目名后轮次')\
@@ -247,6 +254,10 @@ dummy_company_type = pd.get_dummies(data_itjuzi['企业类型'], prefix='dummy_�
     .drop(['dummy_企业类型_-', 'dummy_企业类型_未公开'], axis=1)    # 19836 rows x 84 columns
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
                             (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment
+
+radar_deltaday = rawdata_radar['时间'].apply(get_deltaday)
+
+
 
 
 """Investors data
