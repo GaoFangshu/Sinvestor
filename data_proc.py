@@ -225,15 +225,19 @@ IT橘子创业公司信息：
 IT橘子雷达公司估值：
     id：主键，与IT橘子项目还是公司合并？
     时间：时间换算
-    公司规模：获得数据(人)，"不明确"
+    公司规模：获得数据(人)，"不明确"太多，舍去
     估值：币种问题、换算问题
 """
-# def get_company_data():
+# import data
 rawdata_itjuzi = pd.read_csv('./data/IT橘子创业公司信息.txt', sep='\t', encoding='gbk')    # 54858 rows x 150 columns
 data_itjuzi = rawdata_itjuzi[rawdata_itjuzi['投资机构1'] != '-']    # 19836 rows x 150 columns
+data_itjuzi.drop_duplicates('id')
+data_itjuzi = data_itjuzi.set_index('id')    # 19836 rows x 149 columns
 rawdata_radar = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
+rawdata_radar.drop_duplicates('id')
+rawdata_radar = rawdata_radar.set_index('id')    # 54975 rows x 3 columns
 
-# generate variables
+# generate variables in IT橘子创业公司信息.txt
 dummy_round = pd.get_dummies(data_itjuzi['项目名后轮次'], prefix='dummy_项目名后轮次')\
     .drop('dummy_项目名后轮次_获投状态：不明确', axis = 1)    # 19836 rows x 17 columns
 dummy_class_first = pd.get_dummies(data_itjuzi['一级分类'], prefix='dummy_一级分类')    # 19836 rows x 18 columns
@@ -245,7 +249,6 @@ dummy_numemp = pd.get_dummies(data_itjuzi['公司规模'], prefix='dummy_公司�
 dummy_invested = (data_itjuzi['获投时间2'] != '-').astype(int)    # whether have been invested before, 1 for yes
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
                             get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')    # years from last investment
-get_nth_investment(1, '获投金额', 15, data_itjuzi).value_counts()
 invested_amount = get_nth_investment(1, '获投金额', 15, data_itjuzi).apply(replace_money)
 dummy_round =  pd.get_dummies(data_itjuzi['获投轮次2'], prefix='dummy_获投轮次2')\
     .drop('dummy_获投轮次2_不明确', axis = 1)    # 19836 rows x 17 columns
@@ -255,7 +258,17 @@ dummy_company_type = pd.get_dummies(data_itjuzi['企业类型'], prefix='dummy_�
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
                             (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment
 
+# generate variables in IT橘子雷达公司估值.txt
 radar_deltaday = rawdata_radar['时间'].apply(get_deltaday)
+valuation = rawdata_radar['估值'].apply(replace_money)    # 0: 53278/54975
+
+# merge variables
+variables_itjuzi = pd.concat([dummy_round, dummy_class_first, dummy_class_second, dummy_tag, dummy_numemp, dummy_invested,
+                              year_from_inv, invested_amount, dummy_round, regi_money, dummy_company_type, year_from_inv],
+                             axis=1)    # 19836 rows x 1382 columns
+variables_radar = pd.concat([radar_deltaday, valuation], axis=1)    # 54975 rows x 2 columns
+variables_company = pd.concat([variables_itjuzi, variables_radar], axis=1,
+                              join_axes=[variables_itjuzi.index])    # 19836 rows x 1384 columns
 
 
 
