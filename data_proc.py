@@ -299,6 +299,29 @@ IT橘子创投公司数据：
     投资项目名称、投资项目行业分类、投资项目投资阶段、投资项目投资资金、投资项目投资时间：行业转转dummy，各变量统计
     退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转转dummy，各变量统计
 """
-
+# import data
 rawdata_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
 rawdata_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
+
+
+def get_invamount(string_amount):
+    if '其中包含' not in string_amount:
+        total_amount = 'NA'
+        contains = ['NA']
+        currency = ['NA']
+    else:
+        total_amount = re.search(r'(.*)其中包含(.*)', string_amount).group(1)
+        contains = re.findall(r'\d+\.*\d*\D+', re.search(r'(.*)其中包含(.*)', string_amount).group(2))
+        if not contains:
+            contains = [total_amount]
+            currency = re.findall(r'\D+', total_amount)
+        else:
+            currency = re.findall(r'\D+', re.search(r'(.*)其中包含(.*)', string_amount).group(2))
+    return [total_amount, contains, currency]
+
+rawdata_invjuzi['管理资本规模'].apply(get_invamount).apply(lambda x: x[2][0])
+[0][0].value_counts()
+
+rawdata_invjuzi['管理资本规模'].apply(lambda x: re.search(r'(.*)其中包含(.*)', x).group(1))
+
+rawdata_invjuzi['管理资本规模'][rawdata_invjuzi['管理资本规模'].apply(lambda x: '其中包含' not in x)].value_counts()
