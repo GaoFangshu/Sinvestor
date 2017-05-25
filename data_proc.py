@@ -104,79 +104,60 @@ def replace_money(x):
     elif '亿元人民币' in x:
         q = x.replace('亿元人民币', '')
         q = int(float(q) * 10000)
-        q = int(q)
     elif '亿人民币' in x:
         q = x.replace('亿人民币', '')
         q = int(float(q) * 10000)
-        q = int(q)
     elif '万美元' in x:
         q = x.replace('万美元', '')
         q = int(float(q) * 7)
-        q = int(q)
     elif '亿美元' in x:
         q = x.replace('亿美元', '')
         q = int(float(q) * 70000)
-        q = int(q)
     elif '亿元美元' in x:
         q = x.replace('亿元美元', '')
         q = int(float(q) * 70000)
-        q = int(q)
     elif '万新台币' in x:
         q = x.replace('万新台币', '')
         q = int(float(q) * 0.2)
-        q = int(q)
     elif '亿新台币' in x:
         q = x.replace('亿新台币', '')
         q = int(float(q) * 2000)
-        q = int(q)
     elif '亿港元' in x:
         q = x.replace('亿港元', '')
         q = int(float(q) * 9000)
-        q = int(q)
     elif '亿元港元' in x:
         q = x.replace('亿元港元', '')
         q = int(float(q) * 9000)
-        q = int(q)
     elif '万港元' in x:
         q = x.replace('万港元', '')
         q = int(float(q) * 0.9)
-        q = int(q)
     elif '万英镑' in x:
         q = x.replace('万英镑', '')
         q = int(float(q) * 9)
-        q = int(q)
     elif '亿英镑' in x:
         q = x.replace('亿英镑', '')
         q = int(float(q) * 90000)
-        q = int(q)
     elif '万欧元' in x:
         q = x.replace('万欧元', '')
         q = int(float(q) * 7.7)
-        q = int(q)
     elif '亿欧元' in x:
         q = x.replace('亿欧元', '')
         q = int(float(q) * 77000)
-        q = int(q)
     elif '亿卢比' in x:
         q = x.replace('亿卢比', '')
         q = int(float(q) * 1068)
-        q = int(q)
     elif '万卢比' in x:
         q = x.replace('万卢比', '')
         q = int(float(q) * 0.1068)
-        q = int(q)
     elif '亿日元' in x:
         q = x.replace('亿日元', '')
         q = int(float(q) * 619)
-        q = int(q)
     elif '亿元日元' in x:
         q = x.replace('亿元日元', '')
         q = int(float(q) * 619)
-        q = int(q)
     elif '万日元' in x:
         q = x.replace('万日元', '')
         q = int(float(q) * 0.0619)
-        q = int(q)
     elif x == '万':
         q = 0
     else:
@@ -194,6 +175,32 @@ def get_deltaday(string_date):
         month = 0
     delta = year * 365 + month * 30.4
     return delta
+
+def get_invamount(string_amount):
+    var_total_amount = 0
+    var_CNY_amount = 0
+    var_USD_amount = 0
+    if '其中包含' in string_amount:
+        total_amount = re.search(r'(.*)其中包含(.*)', string_amount).group(1)
+        contains = re.findall(r'\d+\.*\d*\D+', re.search(r'(.*)其中包含(.*)', string_amount).group(2))
+        if not contains:
+            contains = [total_amount]
+            if '亿人民币' in contains[0]:
+                var_CNY_amount = int(float(contains[0].replace('亿人民币', '')) * 10000)
+                var_total_amount = var_CNY_amount
+            elif '亿美元' in contains[0]:
+                var_USD_amount = int(float(contains[0].replace('亿美元', '')) * 70000)
+                var_total_amount = var_USD_amount
+        else:
+            for i in contains:
+                if '亿人民币' in i:
+                    var_CNY_amount = int(float(i.replace('亿人民币', '')) * 10000)
+                    var_total_amount = var_total_amount + var_CNY_amount
+                elif '亿美元' in i:
+                    var_USD_amount = int(float(i.replace('亿美元', '')) * 70000)
+                    var_total_amount = var_total_amount + var_USD_amount
+    return [var_total_amount, var_CNY_amount, var_USD_amount]
+
 
 # check if a is in b, and make a dummy column
 # def dummy_check(a, b):
@@ -303,25 +310,4 @@ IT橘子创投公司数据：
 rawdata_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
 rawdata_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
 
-
-def get_invamount(string_amount):
-    if '其中包含' not in string_amount:
-        total_amount = 'NA'
-        contains = ['NA']
-        currency = ['NA']
-    else:
-        total_amount = re.search(r'(.*)其中包含(.*)', string_amount).group(1)
-        contains = re.findall(r'\d+\.*\d*\D+', re.search(r'(.*)其中包含(.*)', string_amount).group(2))
-        if not contains:
-            contains = [total_amount]
-            currency = re.findall(r'\D+', total_amount)
-        else:
-            currency = re.findall(r'\D+', re.search(r'(.*)其中包含(.*)', string_amount).group(2))
-    return [total_amount, contains, currency]
-
-rawdata_invjuzi['管理资本规模'].apply(get_invamount).apply(lambda x: x[2][0])
-[0][0].value_counts()
-
-rawdata_invjuzi['管理资本规模'].apply(lambda x: re.search(r'(.*)其中包含(.*)', x).group(1))
-
-rawdata_invjuzi['管理资本规模'][rawdata_invjuzi['管理资本规模'].apply(lambda x: '其中包含' not in x)].value_counts()
+rawdata_invjuzi['管理资本规模'].apply(get_invamount)    # To be continue......
