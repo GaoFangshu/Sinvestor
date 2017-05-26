@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-@ZhiJianYuan: Yifan Tang <490983063@qq.com>
-@date: 8:04 pm, May 25, 2017
-@brief: code review from line 7 to line 276
-"""
+
 """
 Files structure:
 - Sinvestors
@@ -16,7 +12,7 @@ Files structure:
     - main_model.py
     - README.md
 """
-# import datetime    # 注释了，因为暂时没有用到这个包
+
 import numpy as np
 import pandas as pd
 import re
@@ -223,6 +219,7 @@ def get_minmax_amount(string_amount, num):
 
 """
 Companies data:
+
 IT橘子创业公司信息：
     id：主键，与雷达合并？
     项目名：
@@ -255,12 +252,10 @@ IT橘子雷达公司估值：
 # http://www.itjuzi.com/company/id 的创业公司信息
 rawdata_itjuzi = pd.read_csv('./data/IT橘子创业公司信息.txt', sep='\t', encoding='gbk')    # 54858 rows x 150 columns
 data_itjuzi = rawdata_itjuzi[rawdata_itjuzi['投资机构1'] != '-']    # 19836 rows x 150 columns
-# data_itjuzi.drop_duplicates('id')    # 19836 rows x 150 columns 注释了，因为id不可能重复，如果重复下面那句会报错
 data_itjuzi = data_itjuzi.set_index('id')    # 19836 rows x 149 columns 此时id不连续
 
 # http://radar.itjuzi.com/company/id 的创业公司信息
 rawdata_radar = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
-# rawdata_radar.drop_duplicates('id')    # 原因同line 247
 data_radar = rawdata_radar.set_index('id')    # 54975 rows x 3 columns 变量命名与data_itjuzi一致，此时id不连续
 
 # generate variables in IT橘子创业公司信息.txt
@@ -279,19 +274,7 @@ dummy_numemp = pd.get_dummies(data_itjuzi['公司规模'], prefix='dummy_公司�
 dummy_invested = (data_itjuzi['获投时间2'] != '-').astype(int)    # whether have been invested before, 1 for yes
 # generate years from last investment
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
-                            get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')    
-    """
-    使用year_from_inv.describe()查看统计描述后发现结果如下：
-    count    19836.000000
-    mean         0.390197
-    std          0.832574
-    min          0.000000
-    25%          0.000000
-    50%          0.000000
-    75%          0.515068
-    max         12.227397
-    从结果看，有50%的值都是0，感觉函数存在问题？
-    """
+                            get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')
 # generate price for the current round
 invested_amount = get_nth_investment(1, '获投金额', 15, data_itjuzi).apply(replace_money)
 # generate last round dummy
@@ -299,39 +282,12 @@ dummy_round =  pd.get_dummies(data_itjuzi['获投轮次2'], prefix='dummy_获投
     .drop('dummy_获投轮次2_不明确', axis = 1)    # 19836 rows x 17 columns
 # generate register money
 regi_money = data_itjuzi['注册资金'].apply(replace_money)
-    """
-    使用regi_money.describe()查看统计描述后发现结果如下：
-    count    1.983600e+04
-    mean     1.670832e+03
-    std      3.014105e+04
-    min      0.000000e+00
-    25%      0.000000e+00
-    50%      0.000000e+00
-    75%      1.200000e+02
-    max      2.273544e+06
-    从结果看，有50%的值都是0，这个结果说明：
-    1. 要么it橘子上的这个变量有一半多都无记录； 
-    2. 要么使用replace_moeny()来处理注册资金变量时存在未考虑情况；
-    """
 dummy_company_type = pd.get_dummies(data_itjuzi['企业类型'], prefix='dummy_企业类型')\
     .drop(['dummy_企业类型_-', 'dummy_企业类型_未公开'], axis=1)    # 19836 rows x 84 columns
 year_from_establish = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
-                            (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment 变量名已改，原命名与上一轮投资距今时间重复
-    """
-    使用year_from_establish.describe()查看统计描述后发现结果如下：
-    count    19836.000000
-    mean         0.962427
-    std          2.402888
-    min        -13.673973
-    25%          0.000000
-    50%          0.000000
-    75%          0.704110
-    max         35.556164
-    从结果看，min是负值，且50%的值是0，同样猜测函数存在问题。
-    """
+                            (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment
 
 # generate variables in IT橘子雷达公司估值.txt
-# 同上面3个块注释，需要检查函数
 radar_deltaday = data_radar['时间'].apply(get_deltaday)
 valuation = data_radar['估值'].apply(replace_money)    # 0: 53278/54975
 
@@ -346,7 +302,9 @@ variables_company = pd.concat([variables_itjuzi, variables_radar], axis=1,
 
 
 
-"""Investors data
+"""
+Investors data:
+
 IT橘子创投公司数据：
     id：主键
     机构简称：与格上理财数据匹配
@@ -376,7 +334,7 @@ IT橘子创投公司数据：
 rawdata_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
 rawdata_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
 
-
+# generate variables in IT橘子创投公司数据.txt
 total_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(0,))
 CNY_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(1,))
 USD_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(2,))
@@ -386,5 +344,3 @@ max_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount
 
 dummy_invarea = set_dummy(rawdata_invjuzi['投资领域'], '投资领域')    # 6607 rows x 33 columns
 dummy_invround = set_dummy(rawdata_invjuzi['投资轮次'], '投资轮次')    # 6607 rows x 9 columns
-
-?
