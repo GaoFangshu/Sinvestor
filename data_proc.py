@@ -331,3 +331,5 @@ max_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount
 
 dummy_invarea = set_dummy(rawdata_invjuzi['投资领域'], '投资领域')    # 6607 rows x 33 columns
 dummy_invround = set_dummy(rawdata_invjuzi['投资轮次'], '投资轮次')    # 6607 rows x 9 columns
+
+?
