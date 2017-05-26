@@ -176,7 +176,7 @@ def get_deltaday(string_date):
     delta = year * 365 + month * 30.4
     return delta
 
-def get_invamount(string_amount):
+def get_invamount(string_amount, num):
     var_total_amount = 0
     var_CNY_amount = 0
     var_USD_amount = 0
@@ -199,8 +199,19 @@ def get_invamount(string_amount):
                 elif '亿美元' in i:
                     var_USD_amount = int(float(i.replace('亿美元', '')) * 70000)
                     var_total_amount = var_total_amount + var_USD_amount
-    return [var_total_amount, var_CNY_amount, var_USD_amount]
+    return [var_total_amount, var_CNY_amount, var_USD_amount][num]
 
+def get_minmax_amount(string_amount, num):
+    var_min_amount = 0
+    var_max_amount = 0
+    if '—' in string_amount:
+        if '人民币' in string_amount:
+            var_min_amount = int(re.search(r'\d+', re.search(r'(.*)—(.*)', string_amount).group(1)).group())
+            var_max_amount = int(re.search(r'\d+', re.search(r'(.*)—(.*)', string_amount).group(2)).group())
+        elif '美元' in string_amount:
+            var_min_amount = int(re.search(r'\d+', re.search(r'(.*)—(.*)', string_amount).group(1)).group()) * 7
+            var_max_amount = int(re.search(r'\d+', re.search(r'(.*)—(.*)', string_amount).group(2)).group()) * 7
+    return [var_min_amount, var_max_amount][num]
 
 # check if a is in b, and make a dummy column
 # def dummy_check(a, b):
@@ -285,7 +296,7 @@ IT橘子创投公司数据：
     id：主键
     机构简称：与格上理财数据匹配
     管理资本规模：解决币种问题、“其中包含”问题、资本规模币种分割问题
-    单个投资项目规模：币种问题、换算问题
+    单个项目投资规模：币种问题、换算问题
     投资领域：空格分割
     投资轮次：空格分割
     （项目方 - 资金方 交叉变量）投资组合时间、投资组合名称、投资组合行业、投资组合轮次、投资组合金额：空格分割、重新做表、币种问题、换算问题
@@ -310,4 +321,13 @@ IT橘子创投公司数据：
 rawdata_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
 rawdata_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
 
-rawdata_invjuzi['管理资本规模'].apply(get_invamount)    # To be continue......
+
+total_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(0,))
+CNY_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(1,))
+USD_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(2,))
+
+min_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(0,))
+max_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(1,))
+
+dummy_invarea = set_dummy(rawdata_invjuzi['投资领域'], '投资领域')    # 6607 rows x 33 columns
+dummy_invround = set_dummy(rawdata_invjuzi['投资轮次'], '投资轮次')    # 6607 rows x 9 columns
