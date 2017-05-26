@@ -1,21 +1,25 @@
 # -*- coding: utf-8 -*-
-import datetime
+"""
+@ZhiJianYuan: Yifan Tang <490983063@qq.com>
+@date: 8:04 pm, May 25, 2017
+@brief: code review from line 7 to line 276
+"""
+"""
+Files structure:
+- Sinvestors
+    - data
+        - IT橘子创业公司信息.txt
+        - IT橘子创投公司数据.txt
+        - IT橘子雷达公司估值.txt
+        - 格上理财投资机构数据.txt
+    - data_proc.py
+    - main_model.py
+    - README.md
+"""
+# import datetime    # 注释了，因为暂时没有用到这个包
 import numpy as np
 import pandas as pd
 import re
-
-
-"""Files structure:
-    - Sinvestors
-        - data
-            - IT橘子创业公司信息.txt
-            - IT橘子创投公司数据.txt
-            - IT橘子雷达公司估值.txt
-            - 格上理财投资机构数据.txt
-        - data_proc.py
-        - main_model.py
-        - README.md
-"""
 
 def unique_element(raw_column):
 # split string to elements and get dummy variables, sep = \s
@@ -217,7 +221,8 @@ def get_minmax_amount(string_amount, num):
 # def dummy_check(a, b):
 
 
-"""Companies data
+"""
+Companies data:
 IT橘子创业公司信息：
     id：主键，与雷达合并？
     项目名：
@@ -247,42 +252,92 @@ IT橘子雷达公司估值：
     估值：币种问题、换算问题
 """
 # import data
+# http://www.itjuzi.com/company/id 的创业公司信息
 rawdata_itjuzi = pd.read_csv('./data/IT橘子创业公司信息.txt', sep='\t', encoding='gbk')    # 54858 rows x 150 columns
 data_itjuzi = rawdata_itjuzi[rawdata_itjuzi['投资机构1'] != '-']    # 19836 rows x 150 columns
-data_itjuzi.drop_duplicates('id')
-data_itjuzi = data_itjuzi.set_index('id')    # 19836 rows x 149 columns
+# data_itjuzi.drop_duplicates('id')    # 19836 rows x 150 columns 注释了，因为id不可能重复，如果重复下面那句会报错
+data_itjuzi = data_itjuzi.set_index('id')    # 19836 rows x 149 columns 此时id不连续
+
+# http://radar.itjuzi.com/company/id 的创业公司信息
 rawdata_radar = pd.read_csv('./data/IT橘子雷达公司估值.txt', sep='\t', encoding='gbk')    # 54975 rows x 4 columns
-rawdata_radar.drop_duplicates('id')
-rawdata_radar = rawdata_radar.set_index('id')    # 54975 rows x 3 columns
+# rawdata_radar.drop_duplicates('id')    # 原因同line 247
+data_radar = rawdata_radar.set_index('id')    # 54975 rows x 3 columns 变量命名与data_itjuzi一致，此时id不连续
 
 # generate variables in IT橘子创业公司信息.txt
+# generate current round dummy
 dummy_round = pd.get_dummies(data_itjuzi['项目名后轮次'], prefix='dummy_项目名后轮次')\
-    .drop('dummy_项目名后轮次_获投状态：不明确', axis = 1)    # 19836 rows x 17 columns
+    .drop('dummy_项目名后轮次_获投状态：不明确', axis = 1)    # 19836 rows x 17 columns 对轮次的定义有待精确化，如按融资重新定义
+# generate industry dummy
 dummy_class_first = pd.get_dummies(data_itjuzi['一级分类'], prefix='dummy_一级分类')    # 19836 rows x 18 columns
 dummy_class_second = pd.get_dummies(data_itjuzi['二级分类'], prefix='dummy_二级分类')\
     .drop('dummy_二级分类_-', axis = 1)    # 19836 rows x 181 columns
-dummy_tag = set_dummy(data_itjuzi['tag'], 'tag')    # 19836 rows x 1049 columns
+dummy_tag = set_dummy(data_itjuzi['tag'], 'tag')    # 19836 rows x 1049 columns 感觉这个函数速度有点慢，但是暂时不知道怎么改
+# generate scale dummy
 dummy_numemp = pd.get_dummies(data_itjuzi['公司规模'], prefix='dummy_公司规模')\
     .drop(['dummy_公司规模_暂未收录', 'dummy_公司规模_不明确'], axis = 1)    # 19836 rows x 11 columns
+# generate whether-invested-before dummy
 dummy_invested = (data_itjuzi['获投时间2'] != '-').astype(int)    # whether have been invested before, 1 for yes
+# generate years from last investment
 year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
-                            get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')    # years from last investment
+                            get_nth_investment(2, '获投时间', 15, data_itjuzi)) / np.timedelta64(365, 'D')    
+    """
+    使用year_from_inv.describe()查看统计描述后发现结果如下：
+    count    19836.000000
+    mean         0.390197
+    std          0.832574
+    min          0.000000
+    25%          0.000000
+    50%          0.000000
+    75%          0.515068
+    max         12.227397
+    从结果看，有50%的值都是0，感觉函数存在问题？
+    """
+# generate price for the current round
 invested_amount = get_nth_investment(1, '获投金额', 15, data_itjuzi).apply(replace_money)
+# generate last round dummy
 dummy_round =  pd.get_dummies(data_itjuzi['获投轮次2'], prefix='dummy_获投轮次2')\
     .drop('dummy_获投轮次2_不明确', axis = 1)    # 19836 rows x 17 columns
+# generate register money
 regi_money = data_itjuzi['注册资金'].apply(replace_money)
+    """
+    使用regi_money.describe()查看统计描述后发现结果如下：
+    count    1.983600e+04
+    mean     1.670832e+03
+    std      3.014105e+04
+    min      0.000000e+00
+    25%      0.000000e+00
+    50%      0.000000e+00
+    75%      1.200000e+02
+    max      2.273544e+06
+    从结果看，有50%的值都是0，这个结果说明：
+    1. 要么it橘子上的这个变量有一半多都无记录； 
+    2. 要么使用replace_moeny()来处理注册资金变量时存在未考虑情况；
+    """
 dummy_company_type = pd.get_dummies(data_itjuzi['企业类型'], prefix='dummy_企业类型')\
     .drop(['dummy_企业类型_-', 'dummy_企业类型_未公开'], axis=1)    # 19836 rows x 84 columns
-year_from_inv = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
-                            (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment
+year_from_establish = invest_days(get_nth_investment(1, '获投时间', 15, data_itjuzi),
+                            (data_itjuzi['注册时间'] + '')) / np.timedelta64(365, 'D')    # years from company's establishment 变量名已改，原命名与上一轮投资距今时间重复
+    """
+    使用year_from_establish.describe()查看统计描述后发现结果如下：
+    count    19836.000000
+    mean         0.962427
+    std          2.402888
+    min        -13.673973
+    25%          0.000000
+    50%          0.000000
+    75%          0.704110
+    max         35.556164
+    从结果看，min是负值，且50%的值是0，同样猜测函数存在问题。
+    """
 
 # generate variables in IT橘子雷达公司估值.txt
-radar_deltaday = rawdata_radar['时间'].apply(get_deltaday)
-valuation = rawdata_radar['估值'].apply(replace_money)    # 0: 53278/54975
+# 同上面3个块注释，需要检查函数
+radar_deltaday = data_radar['时间'].apply(get_deltaday)
+valuation = data_radar['估值'].apply(replace_money)    # 0: 53278/54975
 
 # merge variables
 variables_itjuzi = pd.concat([dummy_round, dummy_class_first, dummy_class_second, dummy_tag, dummy_numemp, dummy_invested,
-                              year_from_inv, invested_amount, dummy_round, regi_money, dummy_company_type, year_from_inv],
+                              year_from_inv, invested_amount, dummy_round, regi_money, dummy_company_type, year_from_establish],
                              axis=1)    # 19836 rows x 1382 columns
 variables_radar = pd.concat([radar_deltaday, valuation], axis=1)    # 54975 rows x 2 columns
 variables_company = pd.concat([variables_itjuzi, variables_radar], axis=1,
