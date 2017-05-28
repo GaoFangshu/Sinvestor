@@ -337,7 +337,7 @@ IT橘子创投公司数据：
     机构简称：与IT橘子数据匹配
     机构类型：查空值、转dummy
     资本类型：查空值、转dummy
-    成立日期：计算距项目时间（是否筛选？）
+    成立日期：计算距项目时间（是否筛选？） TODO:交叉变量
     （项目方 - 资金方交叉变量）机构总部：查空值、转dummy
     管理规模：币种问题、换算问题
     基金个数：查空值
@@ -347,34 +347,70 @@ IT橘子创投公司数据：
     退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转转dummy，各变量统计
 """
 # import data
-rawdata_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
-rawdata_invjuzi = rawdata_invjuzi.set_index('id')
-rawdata_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
-rawdata_geshang = rawdata_geshang.set_index('id')
+data_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
+data_invjuzi = data_invjuzi.set_index('id')
+data_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
+data_geshang = data_geshang.set_index('id')
 
 # generate variables in IT橘子创投公司数据.txt
-total_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(0,))
-CNY_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(1,))
-USD_amount = rawdata_invjuzi['管理资本规模'].apply(get_invamount, args=(2,))
+total_amount = data_invjuzi['管理资本规模'].apply(get_invamount, args=(0,))
+CNY_amount = data_invjuzi['管理资本规模'].apply(get_invamount, args=(1,))
+USD_amount = data_invjuzi['管理资本规模'].apply(get_invamount, args=(2,))
 
-min_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(0,))
-max_amount = rawdata_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(1,))
+min_amount = data_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(0,))
+max_amount = data_invjuzi['单个项目投资规模'].apply(get_minmax_amount, args=(1,))
 
-dummy_invarea = set_dummy(rawdata_invjuzi['投资领域'], '投资领域')    # 6607 rows x 33 columns
-dummy_invround = set_dummy(rawdata_invjuzi['投资轮次'], '投资轮次')    # 6607 rows x 9 columns
+dummy_invarea = set_dummy(data_invjuzi['投资领域'], '投资领域')    # 6607 rows x 33 columns
+dummy_invround = set_dummy(data_invjuzi['投资轮次'], '投资轮次')    # 6607 rows x 9 columns
 
-item_industry = pd.concat([rawdata_invjuzi['已投资行业'].apply(lambda x: re.split(r'\s', x)),
-                           rawdata_invjuzi['已投资各行业数量'].apply(lambda x: re.split(r'\s', x))], axis=1)
+item_industry = pd.concat([data_invjuzi['已投资行业'].apply(lambda x: re.split(r'\s', x)),
+                           data_invjuzi['已投资各行业数量'].apply(lambda x: re.split(r'\s', x))], axis=1)
 percent_industry = get_percent_var(item_industry, '已投资行业', '已投资各行业数量',
                                ['企业服务', '体育运动', '医疗健康', '工具软件', '广告营销', '房产服务', '教育',
                                 '文化娱乐', '旅游', '本地生活', '汽车交通', '游戏', '物流', '电子商务', '硬件',
                                 '社交网络', '移动互联网', '金融'])
 
-rawdata_invjuzi['已投资轮次'][rawdata_invjuzi['已投资轮次'] == 'arr_x'] = '-'
-rawdata_invjuzi['已投资各轮次数量'][rawdata_invjuzi['已投资轮次'] == 'arr_x'] = '-'
-item_round = pd.concat([rawdata_invjuzi['已投资轮次'].apply(lambda x: re.split(r'\s', x)),
-                           rawdata_invjuzi['已投资各轮次数量'].apply(lambda x: re.split(r'\s', x))], axis=1)
+data_invjuzi['已投资轮次'][data_invjuzi['已投资轮次'] == 'arr_x'] = '-'
+data_invjuzi['已投资各轮次数量'][data_invjuzi['已投资轮次'] == 'arr_x'] = '-'
+item_round = pd.concat([data_invjuzi['已投资轮次'].apply(lambda x: re.split(r'\s', x)),
+                        data_invjuzi['已投资各轮次数量'].apply(lambda x: re.split(r'\s', x))], axis=1)
 percent_round = get_percent_var(item_round, '已投资轮次', '已投资各轮次数量',
                                 ['A+轮', 'A轮', 'B+轮', 'B轮', 'C轮', 'D轮', 'E轮', 'F轮-上市前', 'IPO上市',
                                  'IPO上市后', 'Pre-A轮', 'Pre-B轮', '不明确', '天使轮', '战略投资',
                                  '新三板', '种子轮'])
+
+# generate variables in 格上理财投资机构数据.txt
+data_geshang['机构类型'][data_geshang['机构类型'] == '天使投资人'] = '天使投资'
+data_geshang['机构类型'][data_geshang['机构类型'] == 'FOF'] = 'FOFs'
+dummy_inv_type = pd.get_dummies(data_geshang['机构类型'], prefix='dummy_机构类型')\
+    .drop('dummy_机构类型_----', axis = 1)
+dummy_inv_type['dummy_机构类型_VC'] = dummy_inv_type['dummy_机构类型_VC'] +\
+                                        dummy_inv_type['dummy_机构类型_VCPE'] +\
+                                        dummy_inv_type['dummy_机构类型_VC/PE'] +\
+                                        dummy_inv_type['dummy_机构类型_VC/战略投资者']
+dummy_inv_type['dummy_机构类型_PE'] = dummy_inv_type['dummy_机构类型_PE'] +\
+                                        dummy_inv_type['dummy_机构类型_VCPE'] +\
+                                        dummy_inv_type['dummy_机构类型_VC/PE']
+dummy_inv_type['dummy_机构类型_战略投资者'] = dummy_inv_type['dummy_机构类型_战略投资者'] +\
+                                                dummy_inv_type['dummy_机构类型_VC/战略投资者']
+dummy_inv_type.drop(['dummy_机构类型_VCPE', 'dummy_机构类型_VC/PE', 'dummy_机构类型_VC/战略投资者'], axis=1)    # 10106 rows x 8 columns
+
+dummy_cap_type = pd.get_dummies(data_geshang['资本类型'], prefix='dummy_资本类型')\
+    .drop('dummy_资本类型_----', axis = 1)    # 10106 rows x 3 columns
+
+data_geshang['管理规模'][data_geshang['管理规模'] != data_geshang['管理规模']] = '----'    # delete NaN
+manage_money = data_geshang['管理规模'].apply(replace_money)
+
+data_geshang['基金个数'][data_geshang['基金个数'] == '----'] = 0
+num_fund = data_geshang['基金个数'].apply(lambda x: int(x))
+
+data_geshang['投资数量'][data_geshang['投资数量'] == '----'] = 0
+num_inv = data_geshang['投资数量'].apply(lambda x: int(x))
+
+data_geshang['退出数量'][data_geshang['退出数量'] == '----'] = 0
+num_quit = data_geshang['退出数量'].apply(lambda x: int(x))
+num_quit_inv = num_quit / num_inv
+num_quit_inv[num_quit_inv != num_quit_inv] = 1    # or 0?
+
+# data_geshang['管理规模'][3671]
+# data_geshang['退出数量'].value_counts()
