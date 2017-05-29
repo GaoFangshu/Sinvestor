@@ -2,6 +2,7 @@
 
 """
 Files structure:
+
 - Sinvestors
     - data
         - IT橘子创业公司信息.txt
@@ -232,12 +233,11 @@ def get_percent_var(item, item_name, item_amount, item_set):
     return percent_merged
 
 def count_percent(name, data):
-    count = pd.get_dummies(data[['id', name]]
-                           .set_index('id')
-                                      [name]
+    count = pd.get_dummies(data[name]
                            .str.split(r'\s', expand=True)
                            .stack(),
                            prefix='percent_' + name).groupby(level='id').sum()
+    # https: // stackoverflow.com / questions / 39459321 / have - pandas - column - containing - lists - how - to - pivot - unique - list - elements - to - column
     percent = count.div(count.sum(axis=1), axis=0) \
         .drop(['percent_' + name + '_-', 'percent_' + name + '_----'], axis=1)
     return percent
@@ -430,3 +430,10 @@ percent_inv_period = count_percent('投资项目投资阶段', data_geshang)    
 percent_quit_industry = count_percent('退出项目行业分类', data_geshang)    # 10106 rows x 428 columns
 percent_quit_period = count_percent('退出项目退出方式', data_geshang)    # 10106 rows x 8 columns
 
+return_quit = data_geshang['退出项目账面回报'].str.split(r'\s*', expand=True).stack()
+return_quit[(return_quit == '-') | (return_quit == '----')] = 0
+var_return_quit = return_quit.astype(float).groupby(level=0).mean()
+
+return_quit = data_geshang['退出项目账面回报'].str.split(r'\s*', expand=True).stack()
+return_quit[(return_quit == '-') | (return_quit == '----')] = 0
+var_return_quit = return_quit.astype(float).groupby(level=0).mean()
