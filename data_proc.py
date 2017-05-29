@@ -231,6 +231,17 @@ def get_percent_var(item, item_name, item_amount, item_set):
     percent_merged.columns = ['percent_' + x for x in item_set]
     return percent_merged
 
+def count_percent(name, data):
+    count = pd.get_dummies(data[['id', name]]
+                           .set_index('id')
+                                      [name]
+                           .str.split(r'\s', expand=True)
+                           .stack(),
+                           prefix='percent_' + name).groupby(level='id').sum()
+    percent = count.div(count.sum(axis=1), axis=0) \
+        .drop(['percent_' + name + '_-', 'percent_' + name + '_----'], axis=1)
+    return percent
+
 # check if a is in b, and make a dummy column
 # def dummy_check(a, b):
 
@@ -343,8 +354,10 @@ IT橘子创投公司数据：
     基金个数：查空值
     投资数量：查空值
     退出数量：查空值、（退出/投资 比？）
-    投资项目名称、投资项目行业分类、投资项目投资阶段、投资项目投资资金、投资项目投资时间：行业转转dummy，各变量统计
-    退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转转dummy，各变量统计
+    投资项目名称、投资项目行业分类、投资项目投资阶段、投资项目投资资金、投资项目投资时间：行业转dummy，各变量统计
+        TODO:投资项目投资资金、投资项目投资时间
+    退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转dummy，各变量统计
+        TODO:退出项目账面回报、退出项目推出时间
 """
 # import data
 data_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
@@ -412,5 +425,8 @@ num_quit = data_geshang['退出数量'].apply(lambda x: int(x))
 num_quit_inv = num_quit / num_inv
 num_quit_inv[num_quit_inv != num_quit_inv] = 1    # or 0?
 
-# data_geshang['管理规模'][3671]
-# data_geshang['退出数量'].value_counts()
+percent_inv_industry = count_percent('投资项目行业分类', data_geshang)    # 10106 rows x 906 columns
+percent_inv_period = count_percent('投资项目投资阶段', data_geshang)    # 10106 rows x 6 columns
+percent_quit_industry = count_percent('退出项目行业分类', data_geshang)    # 10106 rows x 428 columns
+percent_quit_period = count_percent('退出项目退出方式', data_geshang)    # 10106 rows x 8 columns
+
