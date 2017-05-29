@@ -159,10 +159,16 @@ def replace_money(x):
     elif '万日元' in x:
         q = x.replace('万日元', '')
         q = int(float(q) * 0.0619)
+    elif '亿新加坡元' in x:
+        q = x.replace('亿新加坡元', '')
+        q = int(float(q) * 49577)
+    elif '亿加元' in x:
+        q = x.replace('亿加元', '')
+        q = int(float(q) * 50922)
     elif x == '万':
         q = 0
     else:
-        return x
+        return 0
     return q
 
 def get_deltaday(string_date):
@@ -355,9 +361,9 @@ IT橘子创投公司数据：
     投资数量：查空值
     退出数量：查空值、（退出/投资 比？）
     投资项目名称、投资项目行业分类、投资项目投资阶段、投资项目投资资金、投资项目投资时间：行业转dummy，各变量统计
-        TODO:投资项目投资资金、投资项目投资时间
+        TODO:投资项目投资资金(暂时没有币种分类)、投资项目投资时间
     退出项目企业名称、退出项目行业分类、退出项目退出方式、退出项目账面回报、退出项目推出时间：行业转dummy，各变量统计
-        TODO:退出项目账面回报、退出项目推出时间
+        TODO:退出项目账面回报('----'和'-'记为0)、退出项目推出时间
 """
 # import data
 data_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
@@ -430,10 +436,10 @@ percent_inv_period = count_percent('投资项目投资阶段', data_geshang)    
 percent_quit_industry = count_percent('退出项目行业分类', data_geshang)    # 10106 rows x 428 columns
 percent_quit_period = count_percent('退出项目退出方式', data_geshang)    # 10106 rows x 8 columns
 
-return_quit = data_geshang['退出项目账面回报'].str.split(r'\s*', expand=True).stack()
-return_quit[(return_quit == '-') | (return_quit == '----')] = 0
-var_return_quit = return_quit.astype(float).groupby(level=0).mean()
+amount_invest = data_geshang['投资项目投资资金'].str.split(r'\s*', expand=True).stack().apply(replace_money)
+var_amount_invest = amount_invest.astype(float).replace(0, np.NaN).groupby(level=0).mean().replace(np.NaN, 0)
 
 return_quit = data_geshang['退出项目账面回报'].str.split(r'\s*', expand=True).stack()
 return_quit[(return_quit == '-') | (return_quit == '----')] = 0
 var_return_quit = return_quit.astype(float).groupby(level=0).mean()
+
