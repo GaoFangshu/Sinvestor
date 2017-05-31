@@ -355,7 +355,7 @@ IT橘子创投公司数据：
     机构类型：查空值、转dummy
     资本类型：查空值、转dummy
     成立日期：计算距项目时间（是否筛选？） TODO:交叉变量
-    （项目方 - 资金方交叉变量）机构总部：查空值、转dummy
+    （项目方 - 资金方交叉变量）机构总部：查空值、转dummy，  TODO:合并it橘子一二级地区，删格上理财多余字
     管理规模：币种问题、换算问题
     基金个数：查空值
     投资数量：查空值
@@ -443,3 +443,20 @@ return_quit = data_geshang['退出项目账面回报'].str.split(r'\s*', expand=
 return_quit[(return_quit == '-') | (return_quit == '----')] = 0
 var_return_quit = return_quit.astype(float).groupby(level=0).mean()
 
+
+variables_invjuzi = pd.concat([data_invjuzi['投资机构名称'], total_amount, CNY_amount, USD_amount, min_amount, max_amount,
+                               dummy_invarea, dummy_invround, percent_industry, percent_round], axis=1)    # 6607 rows x 83 columns
+variables_geshang = pd.concat([data_geshang['机构简称'], dummy_inv_type, dummy_cap_type, manage_money, num_fund,
+                               num_inv, num_quit_inv, percent_inv_industry, percent_inv_period, percent_quit_industry,
+                               percent_quit_period, var_amount_invest, var_return_quit], axis=1)    # 10106 rows x 1369 columns
+merged_inv = variables_invjuzi.merge(variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
+merged_inv[merged_inv['机构简称']=='兰德创投']
+data_invjuzi[data_invjuzi['投资机构名称']=='兰德创投']
+merged_inv['机构简称'].value_counts().sum()    # 2350
+
+
+# variables_invjuzi0 = pd.concat([data_invjuzi['投资机构名称'], total_amount], axis=1)    # 6607 rows x 83 columns
+# variables_geshang0 = pd.concat([data_geshang['机构简称'], manage_money], axis=1)    # 10106 rows x 1369 columns
+# merged_inv0 = variables_invjuzi0.merge(variables_geshang0, left_on='投资机构名称', right_on='机构简称', how='left')
+# merged_inv0
+# merged_inv0[merged_inv0['机构简称']=='证大投资']
