@@ -345,7 +345,7 @@ IT橘子创投公司数据：
     单个项目投资规模：币种问题、换算问题
     投资领域：空格分割
     投资轮次：空格分割
-    （项目方 - 资金方 交叉变量）投资组合时间、投资组合名称、投资组合行业、投资组合轮次、投资组合金额：空格分割、重新做表、币种问题、换算问题
+    （项目方 - 资金方 交叉变量）投资组合时间（没用到）、投资组合名称、投资组合行业、投资组合轮次、投资组合金额：空格分割、重新做表、币种问题、换算问题
     （项目方 - 资金方 交叉变量）投资人姓名60、投资人职位60、投资人简介60、投资人投资项目60、投资人工作经历60、投资人教育经历60：把60人以这五类汇总
     已投资行业、已投资各行业数量、已投资轮次、已投资各轮次数量：总表dummy然后每个投资机构填入统计
 
@@ -450,9 +450,71 @@ variables_geshang = pd.concat([data_geshang['机构简称'], dummy_inv_type, dum
                                num_inv, num_quit_inv, percent_inv_industry, percent_inv_period, percent_quit_industry,
                                percent_quit_period, var_amount_invest, var_return_quit], axis=1)    # 10106 rows x 1369 columns
 merged_inv = variables_invjuzi.merge(variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
+
+# --------------------- End ----------------------
+
+
+merged_inv[['投资机构名称','机构简称']]
 merged_inv[merged_inv['机构简称']=='兰德创投']
 data_invjuzi[data_invjuzi['投资机构名称']=='兰德创投']
 merged_inv['机构简称'].value_counts().sum()    # 2350
+
+def delete_words(name):
+    name = str(name)
+    if '资本' in name:
+        q = name.replace('资本', '')
+    elif '创投' in name:
+        q = name.replace('创投', '')
+    elif '中国' in name:
+        q = name.replace('中国', '')
+    elif '基金' in name:
+        q = name.replace('基金', '')
+    elif '投资' in name:
+        q = name.replace('投资', '')
+    else:
+        q = name
+    return q
+
+data_invjuzi = pd.read_csv('./data/IT橘子创投公司数据.txt', sep='\t', encoding='gbk')    # 6607 rows x 375 columns
+data_geshang = pd.read_csv('./data/格上理财投资机构数据.txt', sep='\t', encoding='gbk')    # 10106 rows x 20 columns
+
+name_invjuzi = data_invjuzi[['id','投资机构名称']]
+name_geshang = data_geshang[['id','机构简称']]
+
+merged_name = name_invjuzi.merge(name_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
+
+nan_invjuzi =  name_invjuzi[pd.isnull(merged_name['id_y'])]
+nan_geshang = name_geshang[pd.isnull(name_geshang
+                    .merge(merged_name[['id_y','机构简称']][pd.notnull(merged_name['id_y'])],
+                           left_on='id',
+                           right_on='id_y',
+                           how='left')
+                    ['id_y'])]
+
+nan_invjuzi['投资机构名称'].apply(delete_words).rename("e")
+nan_geshang['机构简称'].apply(delete_words)
+
+left_invjuzi = pd.concat([nan_invjuzi, nan_invjuzi['投资机构名称'].apply(delete_words).rename('deleted')], axis=1)
+right_geshang = pd.concat([nan_geshang, nan_geshang['机构简称'].apply(delete_words).rename('deleted')], axis=1)
+
+def in_search(name):
+    check = right_geshang['deleted'].apply(lambda x: x in name)
+    # 0   2813
+    # 1    994
+    # 2    304
+    # 3    105
+    # 4     32
+    # 5      9
+    count = check.sum()
+    if count == 1:
+        id = [right_geshang['id'][check].iloc[0], right_geshang['机构简称'][check].iloc[0]]
+    else:
+        id = np.NaN
+    return id
+right_geshang['deleted'][5] in left_invjuzi['deleted'][0]
+
+aa = left_invjuzi['deleted'].apply(in_search)
+pd.concat([aa, left_invjuzi['投资机构名称']], axis=1)
 
 
 # variables_invjuzi0 = pd.concat([data_invjuzi['投资机构名称'], total_amount], axis=1)    # 6607 rows x 83 columns
