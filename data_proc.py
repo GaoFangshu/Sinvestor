@@ -466,11 +466,11 @@ class DataInvestor:
 
 
 if __name__ == '__main__':
-    data_company = DataCompany()
-    data_company.import_data_itjuzi()
-    data_company.import_data_radar()
-    data_company.gen_variables()
-    data_company.gen_data()
+    data_companies = DataCompany()
+    data_companies.import_data_itjuzi()
+    data_companies.import_data_radar()
+    data_companies.gen_variables()
+    data_companies.gen_data()
 
     data_investors = DataInvestor()
     data_investors.import_data_invjuzi()
