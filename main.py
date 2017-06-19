@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import data_proc
+import check
 
 # ------------------- Set hyperparameters -------------------
 
@@ -29,3 +30,12 @@ if __name__ == '__main__':
     data_investors.import_data_geshang()
     data_investors.gen_variables()
     data_investors.gen_data()
+
+    # Sampling
+    observation = check.Observation(data_companies.data,
+                              data_investors.data,
+                              data_companies.data_itjuzi,
+                              data_investors.data_invjuzi,
+                              train_size=3000,
+                              batch_size_main=1000)
+    observation.gen_observation()
