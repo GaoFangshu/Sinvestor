@@ -464,6 +464,19 @@ class DataInvestor:
                                             self.percent_quit_period, self.var_amount_invest, self.var_return_quit], axis=1)    # 10106 rows x 1369 columns
         self.data = self.variables_invjuzi.merge(self.variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
 
+    def delete_foreign(self, ):
+        """Delete foreign investors"""
+        pass
+
+
+    def delete_small(self):
+        """Delete investors whose amount less than 1000,0000 $ or 6800,0000 ￥"""
+        pass
+
+    def delete_no_recent(self):
+        """Delete investors who didn't invest in last 3 years"""
+        pass
+
 
 if __name__ == '__main__':
     data_companies = DataCompany()
@@ -472,10 +485,10 @@ if __name__ == '__main__':
     data_companies.gen_variables()
     data_companies.gen_data()
 
-    data_investors = DataInvestor()
-    data_investors.import_data_invjuzi()
-    data_investors.import_data_geshang()
-    data_investors.gen_variables()
-    data_investors.gen_data()
+    # data_investors = DataInvestor()
+    # data_investors.import_data_invjuzi()
+    # data_investors.import_data_geshang()
+    # data_investors.gen_variables()
+    # data_investors.gen_data()
 
 # --------------------- End ----------------------
