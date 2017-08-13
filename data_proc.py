@@ -10,6 +10,7 @@ Files structure:
         - IT橘子创投公司数据.txt
         - IT橘子雷达公司估值.txt
         - 格上理财投资机构数据.txt
+        - itjuzi_geshang_finished.txt
     - data_proc.py
     - main_model.py
     - README.md
@@ -534,6 +535,10 @@ if __name__ == '__main__':
     deleted_data['投资机构名称'].to_frame().to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/deleted_data.csv')
 
     data_investors.import_data_geshang()
+    data_investors.data_geshang['id'] = data_investors.data_geshang.index
+    deletd_with_geshang = pd.merge(left=deleted_data['投资机构名称'].to_frame(), right=data_investors.data_geshang[['id', '机构简称']], how='left', left_on='投资机构名称', right_on='机构简称')
+    deletd_with_geshang.to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/itjuzi_geshang_data.csv')
+
     data_investors.gen_variables()
     data_investors.gen_data()
 
