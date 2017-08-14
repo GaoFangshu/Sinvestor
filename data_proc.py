@@ -410,7 +410,7 @@ class DataInvestor:
         self.data_geshang['机构类型'][self.data_geshang['机构类型'] == 'FOF'] = 'FOFs'
         self.data_geshang['管理规模'][self.data_geshang['管理规模'] != self.data_geshang['管理规模']] = '----'  # delete NaN
 
-    def gen_variables(self):
+    def gen_variables(self, normalize = True):
         """Generate variables in data."""
 
         # generate variables in IT橘子创投公司数据.txt
@@ -478,8 +478,34 @@ class DataInvestor:
         return_quit[(return_quit == '-') | (return_quit == '----')] = 0
         self.var_return_quit = return_quit.astype(float).groupby(level=0).mean()
 
-    def gen_data(self):
-        """Merge variables and merge investors data"""
+
+        if normalize:
+            self.total_amount = (self.total_amount - np.min(self.total_amount)) / \
+                                (np.max(self.total_amount) - np.min(self.total_amount)) - 0.5
+            self.CNY_amount = (self.CNY_amount - np.min(self.CNY_amount)) / \
+                                (np.max(self.CNY_amount) - np.min(self.CNY_amount)) - 0.5
+            self.USD_amount = (self.USD_amount - np.min(self.USD_amount)) / \
+                                (np.max(self.USD_amount) - np.min(self.USD_amount)) - 0.5
+            self.min_amount = (self.min_amount - np.min(self.min_amount)) / \
+                                (np.max(self.min_amount) - np.min(self.min_amount)) - 0.5 # TODO: 应该有一个判断项目是否符合的 indicator
+            self.max_amount = (self.max_amount - np.min(self.max_amount)) / \
+                                (np.max(self.max_amount) - np.min(self.max_amount)) - 0.5
+
+            self.manage_money = (self.manage_money - np.min(self.manage_money)) / \
+                              (np.max(self.manage_money) - np.min(self.manage_money)) - 0.5 # TODO: 应该有一个判断是否为空的 indicator
+            self.num_fund = (self.num_fund - np.min(self.num_fund)) / \
+                              (np.max(self.num_fund) - np.min(self.num_fund)) - 0.5
+            self.num_inv = (self.num_inv - np.min(self.num_inv)) / \
+                              (np.max(self.num_inv) - np.min(self.num_inv)) - 0.5
+            self.num_quit = (self.num_quit - np.min(self.num_quit)) / \
+                              (np.max(self.num_quit) - np.min(self.num_quit)) - 0.5
+            self.num_quit_inv = (self.num_quit_inv - np.min(self.num_quit_inv)) / \
+                              (np.max(self.num_quit_inv) - np.min(self.num_quit_inv)) - 0.5
+            self.var_amount_invest = (self.var_amount_invest - np.min(self.var_amount_invest)) / \
+                              (np.max(self.var_amount_invest) - np.min(self.var_amount_invest)) - 0.5
+            self.var_return_quit = (self.var_return_quit - np.min(self.var_return_quit)) / \
+                              (np.max(self.var_return_quit) - np.min(self.var_return_quit)) - 0.5
+
 
         self.variables_invjuzi = pd.concat([self.data_invjuzi['投资机构名称'], self.total_amount, self.CNY_amount,
                                             self.USD_amount, self.min_amount, self.max_amount, self.dummy_invarea,
@@ -492,7 +518,11 @@ class DataInvestor:
                                             self.percent_quit_industry,
                                             self.percent_quit_period, self.var_amount_invest, self.var_return_quit],
                                            axis=1)  # 10106 rows x 1369 columns
-        self.data = self.variables_invjuzi.merge(self.variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
+
+    # def gen_data(self, normalize = True):
+    #     """Merge variables and merge investors data"""
+    #
+    #     self.data = self.variables_invjuzi.merge(self.variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
 
     def delete_foreign(self):
         """Delete foreign investors"""
@@ -515,6 +545,17 @@ class DataInvestor:
 
         self.data_invjuzi_deleted_old = data[data.iloc[:, column].apply(lambda x: re.split(sep, str(x))).apply(lambda x: delta_last_date(x))]
 
+    def gen_model_data(self):
+        """Generate investors data for training"""
+        data_merger = pd.read_csv('./data/itjuzi_geshang_finished.txt', sep=',', encoding='utf-8', )
+        deleted_merged = pd.merge(left=self.variables_invjuzi.loc[self.data_invjuzi_deleted_old.index, :],
+                                  right=data_merger[['投资机构名称', 'id']].rename(columns={'id': 'geshang_id'}),
+                                  how='left')
+        data_merged = pd.merge(left=deleted_merged, right=self.variables_geshang, how='left',
+                               left_on='geshang_id', right_index=True)
+        self.model_data = pd.concat([data_merged.drop(['geshang_id', '投资机构名称', '机构简称'], axis=1),
+                                ~np.isnan(data_merged['geshang_id'].astype(float)) * 1], axis=1)
+        self.model_data = self.model_data.fillna(0)
 
 if __name__ == '__main__':
     # data_companies = DataCompany()
@@ -525,21 +566,20 @@ if __name__ == '__main__':
 
     data_investors = DataInvestor()
     data_investors.import_data_invjuzi()
-    
+    data_investors.import_data_geshang()
+    data_investors.gen_variables()
+
     # Get deleted data
     data_investors.delete_small(data=data_investors.data_invjuzi['投资组合金额'])
     merged_data = pd.merge(left=data_investors.data_invjuzi_deleted_small.to_frame(), right=data_investors.data_invjuzi['投资组合时间'].to_frame(), how='left', left_index=True, right_index=True)
     data_investors.delete_no_recent(data=merged_data, column=1)
-    data_investors.data_invjuzi_deleted_old
-    deleted_data = pd.merge(left=data_investors.data_invjuzi['投资机构名称'].to_frame(), right=data_investors.data_invjuzi_deleted_old, how='right', left_index=True, right_index=True)
-    deleted_data['投资机构名称'].to_frame().to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/deleted_data.csv')
+    # deleted_data = pd.merge(left=data_investors.data_invjuzi['投资机构名称'].to_frame(), right=data_investors.data_invjuzi_deleted_old, how='right', left_index=True, right_index=True)
+    # deleted_data['投资机构名称'].to_frame().to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/deleted_data.csv')
+    #
+    # data_investors.data_geshang['id'] = data_investors.data_geshang.index
+    # deletd_with_geshang = pd.merge(left=deleted_data['投资机构名称'].to_frame(), right=data_investors.data_geshang[['id', '机构简称']], how='left', left_on='投资机构名称', right_on='机构简称')
+    # deletd_with_geshang.to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/itjuzi_geshang_data.csv')
 
-    data_investors.import_data_geshang()
-    data_investors.data_geshang['id'] = data_investors.data_geshang.index
-    deletd_with_geshang = pd.merge(left=deleted_data['投资机构名称'].to_frame(), right=data_investors.data_geshang[['id', '机构简称']], how='left', left_on='投资机构名称', right_on='机构简称')
-    deletd_with_geshang.to_csv('/media/gaofangshu/Windows/Users/Fangshu Gao/Desktop/demo/Sinvestor/itjuzi_geshang_data.csv')
+    data_investors.gen_model_data()
 
-    data_investors.gen_variables()
-    data_investors.gen_data()
-
-# --------------------- End ----------------------
+    print(data_investors.model_data.head())
