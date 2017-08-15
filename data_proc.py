@@ -349,8 +349,23 @@ class DataCompany:
         self.radar_deltaday = self.data_radar['时间'].apply(get_deltaday)
         self.valuation = self.data_radar['估值'].apply(replace_money)  # 0: 53278/54975
 
-    def gen_data(self):
+    def gen_data(self, normalize=True):
         """Merge variables and merge companies data"""
+
+        if normalize:
+            self.year_from_inv = (self.year_from_inv - np.min(self.year_from_inv)) / \
+                                (np.max(self.year_from_inv) - np.min(self.year_from_inv)) - 0.5
+            self.invested_amount = (self.invested_amount - np.min(self.invested_amount)) / \
+                                 (np.max(self.invested_amount) - np.min(self.invested_amount)) - 0.5
+            self.regi_money = (self.regi_money - np.min(self.regi_money)) / \
+                                 (np.max(self.regi_money) - np.min(self.regi_money)) - 0.5
+            self.year_from_establish = (self.year_from_establish - np.min(self.year_from_establish)) / \
+                                 (np.max(self.year_from_establish) - np.min(self.year_from_establish)) - 0.5
+            self.radar_deltaday = (self.radar_deltaday - np.min(self.radar_deltaday)) / \
+                                       (np.max(self.radar_deltaday) - np.min(self.radar_deltaday)) - 0.5
+            self.valuation = (self.valuation - np.min(self.valuation)) / \
+                                  (np.max(self.valuation) - np.min(self.valuation)) - 0.5
+
         self.variables_itjuzi = pd.concat(
             [self.dummy_round, self.dummy_class_first, self.dummy_class_second, self.dummy_tag, self.dummy_numemp,
              self.dummy_invested, self.year_from_inv, self.invested_amount, self.dummy_round, self.regi_money,
@@ -551,18 +566,21 @@ class DataInvestor:
         deleted_merged = pd.merge(left=self.variables_invjuzi.loc[self.data_invjuzi_deleted_old.index, :],
                                   right=data_merger[['投资机构名称', 'id']].rename(columns={'id': 'geshang_id'}),
                                   how='left')
-        data_merged = pd.merge(left=deleted_merged, right=self.variables_geshang, how='left',
+        self.data_merged = pd.merge(left=deleted_merged, right=self.variables_geshang, how='left',
                                left_on='geshang_id', right_index=True)
-        self.model_data = pd.concat([data_merged.drop(['geshang_id', '投资机构名称', '机构简称'], axis=1),
-                                ~np.isnan(data_merged['geshang_id'].astype(float)) * 1], axis=1)
+        self.model_data = pd.concat([self.data_merged.drop(['geshang_id', '投资机构名称', '机构简称'], axis=1),
+                                ~np.isnan(self.data_merged['geshang_id'].astype(float)) * 1], axis=1)\
+                          .set_index(self.data_invjuzi_deleted_old.index)
         self.model_data = self.model_data.fillna(0)
 
 if __name__ == '__main__':
-    # data_companies = DataCompany()
-    # data_companies.import_data_itjuzi()
-    # data_companies.import_data_radar()
-    # data_companies.gen_variables()
-    # data_companies.gen_data()
+    data_companies = DataCompany()
+    data_companies.import_data_itjuzi()
+    data_companies.import_data_radar()
+    data_companies.gen_variables()
+    data_companies.gen_data()
+
+    print(data_companies.data.head())
 
     data_investors = DataInvestor()
     data_investors.import_data_invjuzi()
@@ -583,3 +601,5 @@ if __name__ == '__main__':
     data_investors.gen_model_data()
 
     print(data_investors.model_data.head())
+
+# --------- End ---------

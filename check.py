@@ -2,6 +2,7 @@
 from random import randint
 import numpy as np
 import data_proc
+import pandas as pd
 
 def paste_string(data, name, num_start, num_end):
     string = ''
@@ -56,40 +57,40 @@ class Observation:
         self.batch_size_main = batch_size_main
 
         self.investor_now = data_proc.get_nth_investment(1, '投资机构', 15, self.data_itjuzi)
-        self.investor_name_list = self.data_investors['投资机构名称']
+        self.investor_name_list = self.data_invjuzi['投资机构名称'].loc[self.data_investors.index]
 
     def gen_observation(self):
         # TODO: Multithread?
         def check(loc_company, loc_investor):
             """For random location (row), calculate variables of interaction."""
             # print('Check start ')
-            self.relation_work = check_relation(paste_string(self.data_itjuzi.iloc[loc_company], '工作经历', 1, 12),
-                                                paste_string(self.data_invjuzi.iloc[loc_investor], '投资人工作经历', 1,
+            self.relation_work = check_relation(paste_string(self.data_itjuzi.loc[loc_company], '工作经历', 1, 12),
+                                                paste_string(self.data_invjuzi.loc[loc_investor], '投资人工作经历', 1,
                                                              60))
             # print('relation_work OK ' + str(self.relation_work))
-            self.relation_edu = check_relation(paste_string(self.data_itjuzi.iloc[loc_company], '教育经历', 1, 12),
-                                               paste_string(self.data_invjuzi.iloc[loc_investor], '投资人教育经历', 1, 60))
+            self.relation_edu = check_relation(paste_string(self.data_itjuzi.loc[loc_company], '教育经历', 1, 12),
+                                               paste_string(self.data_invjuzi.loc[loc_investor], '投资人教育经历', 1, 60))
             # print('relation_edu OK ' + str(self.relation_edu))
-            self.percent_class_first = check_percent(self.data_itjuzi['一级分类'].iloc[loc_company],
-                                                     self.data_invjuzi['投资组合行业'].iloc[loc_investor])
+            self.percent_class_first = check_percent(self.data_itjuzi['一级分类'].loc[loc_company],
+                                                     self.data_invjuzi['投资组合行业'].loc[loc_investor])
             # print('percent_class_first OK ' + str(self.percent_class_first))
-            self.percent_round = check_percent(self.data_itjuzi['项目名后轮次'].iloc[loc_company],
-                                               self.data_invjuzi['已投资轮次'].iloc[loc_investor])
+            self.percent_round = check_percent(self.data_itjuzi['项目名后轮次'].loc[loc_company],
+                                               self.data_invjuzi['已投资轮次'].loc[loc_investor])
             # print('percent_round OK ' + str(self.percent_round))
-            self.competitor = check_competitor(self.data_itjuzi['二级分类'].iloc[loc_company],
-                                               self.data_invjuzi['投资组合名称'].iloc[loc_investor],
+            self.competitor = check_competitor(self.data_itjuzi['二级分类'].loc[loc_company],
+                                               self.data_invjuzi['投资组合名称'].loc[loc_investor],
                                                self.data_itjuzi)
             # print('competitor OK ' + str(self.competitor))
             # print('Check finished')
 
-        def get_sample(i_random_company, i_random_invest):
+        def get_sample(i_random_company, i_random_invest):    # based on index
             """Concatenate company observation, investor observation, interaction variables and answer y (0 or 1).
             Maybe the observations should be autoencoded."""
             # TODO: Autoencoded?
-            if self.investor_name_list.iloc[i_random_invest] in self.investor_now.iloc[i_random_company]:
+            if self.investor_name_list.loc[i_random_invest] in self.investor_now.loc[i_random_company]:
                 check(i_random_company, i_random_invest)
-                sample = [np.concatenate([self.data_companies.iloc[i_random_company],
-                                         self.data_investors.iloc[i_random_invest],
+                sample = [np.concatenate([self.data_companies.loc[i_random_company],
+                                         self.data_investors.loc[i_random_invest],
                                          np.array([self.relation_work, self.relation_edu, self.percent_class_first,
                                                    self.percent_round,self.competitor[0], self.competitor[1]])]),
                          np.array([1])]
@@ -97,8 +98,8 @@ class Observation:
                 return sample
             else:
                 check(i_random_company, i_random_invest)
-                sample = [np.concatenate([self.data_companies.iloc[i_random_company],
-                                         self.data_investors.iloc[i_random_invest],
+                sample = [np.concatenate([self.data_companies.loc[i_random_company],
+                                         self.data_investors.loc[i_random_invest],
                                          np.array([self.relation_work, self.relation_edu, self.percent_class_first,
                                                    self.percent_round,self.competitor[0], self.competitor[1]])]),
                          np.array([0])]
@@ -106,26 +107,34 @@ class Observation:
                 return sample
         while 1:
             random_company = [randint(0, self.train_size - 1) for i in range(self.batch_size_main)]
-            random_invest = [randint(0, len(self.data_invjuzi) - 1) for i in range(self.batch_size_main)]
+            index_random_company = self.data_companies.index[random_company]
+            random_invest = [randint(0, len(self.data_investors) - 1) for i in range(self.batch_size_main)]
+            index_random_invest = self.data_investors.index[random_invest]
             # print(random_invest)
-            yield (np.asarray([get_sample(random_company[i], random_invest[i])[0] for i in range(self.batch_size_main)]),
-                 np.asarray([get_sample(random_company[i], random_invest[i])[1] for i in range(self.batch_size_main)]))
+            yield (np.asarray([get_sample(index_random_company[i], index_random_invest[i])[0] for i in range(self.batch_size_main)]),
+                 np.asarray([get_sample(index_random_company[i], index_random_invest[i])[1] for i in range(self.batch_size_main)]))
 
 if __name__ == '__main__':
     data_companies = data_proc.DataCompany()
     data_companies.import_data_itjuzi()
     data_companies.import_data_radar()
     data_companies.gen_variables()
-    data_companies.gen_data()
+    data_companies.gen_data()    # Output: data_companies.data
 
     data_investors = data_proc.DataInvestor()
     data_investors.import_data_invjuzi()
     data_investors.import_data_geshang()
     data_investors.gen_variables()
-    data_investors.gen_data()
+
+    data_investors.delete_small(data=data_investors.data_invjuzi['投资组合金额'])
+    merged_data = pd.merge(left=data_investors.data_invjuzi_deleted_small.to_frame(),
+                           right=data_investors.data_invjuzi['投资组合时间'].to_frame(), how='left', left_index=True,
+                           right_index=True)
+    data_investors.delete_no_recent(data=merged_data, column=1)
+    data_investors.gen_model_data()    # Output: data_investors.model_data
 
     observation = Observation(data_companies.data,
-                              data_investors.data,
+                              data_investors.model_data,
                               data_companies.data_itjuzi,
                               data_investors.data_invjuzi,
                               train_size=3000,
