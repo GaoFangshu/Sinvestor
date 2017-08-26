@@ -87,21 +87,21 @@ class Observation:
             """Concatenate company observation, investor observation, interaction variables and answer y (0 or 1).
             Maybe the observations should be autoencoded."""
             # TODO: Autoencoded?
-            if self.investor_name_list.loc[i_random_invest] in self.investor_now.loc[i_random_company]:
+            if str(self.investor_name_list.loc[i_random_invest]) in str(self.investor_now.loc[i_random_company]):
                 check(i_random_company, i_random_invest)
-                sample = [np.concatenate([self.data_companies.loc[i_random_company],
-                                         self.data_investors.loc[i_random_invest],
-                                         np.array([self.relation_work, self.relation_edu, self.percent_class_first,
-                                                   self.percent_round,self.competitor[0], self.competitor[1]])]),
+                sample = [self.data_companies.loc[i_random_company],
+                          self.data_investors.loc[i_random_invest],
+                          np.array([self.relation_work, self.relation_edu, self.percent_class_first,
+                                   self.percent_round,self.competitor[0], self.competitor[1]]),
                          np.array([1])]
                 # print('Sample prepared (1)')
                 return sample
             else:
                 check(i_random_company, i_random_invest)
-                sample = [np.concatenate([self.data_companies.loc[i_random_company],
-                                         self.data_investors.loc[i_random_invest],
-                                         np.array([self.relation_work, self.relation_edu, self.percent_class_first,
-                                                   self.percent_round,self.competitor[0], self.competitor[1]])]),
+                sample = [self.data_companies.loc[i_random_company],
+                          self.data_investors.loc[i_random_invest],
+                          np.array([self.relation_work, self.relation_edu, self.percent_class_first,
+                                   self.percent_round,self.competitor[0], self.competitor[1]]),
                          np.array([0])]
                 # print('Sample prepared (0)')
                 return sample
@@ -111,8 +111,11 @@ class Observation:
             random_invest = [randint(0, len(self.data_investors) - 1) for i in range(self.batch_size_main)]
             index_random_invest = self.data_investors.index[random_invest]
             # print(random_invest)
-            yield (np.asarray([get_sample(index_random_company[i], index_random_invest[i])[0] for i in range(self.batch_size_main)]),
-                 np.asarray([get_sample(index_random_company[i], index_random_invest[i])[1] for i in range(self.batch_size_main)]))
+            sample = [get_sample(index_random_company[i], index_random_invest[i]) for i in range(self.batch_size_main)]
+            yield ({'input_company':np.asarray([i[0] for i in sample]), 'input_investor':np.asarray([i[1] for i in sample]),
+                    'input_cross':np.asarray([i[2] for i in sample])}, {'output_dense':np.asarray([i[3] for i in sample])})
+##            yield (np.asarray([get_sample(index_random_company[i], index_random_invest[i])[0] for i in range(self.batch_size_main)]),
+##                 np.asarray([get_sample(index_random_company[i], index_random_invest[i])[1] for i in range(self.batch_size_main)]))
 
 if __name__ == '__main__':
     data_companies = data_proc.DataCompany()

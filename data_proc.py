@@ -534,10 +534,10 @@ class DataInvestor:
                                             self.percent_quit_period, self.var_amount_invest, self.var_return_quit],
                                            axis=1)  # 10106 rows x 1369 columns
 
-    # def gen_data(self, normalize = True):
-    #     """Merge variables and merge investors data"""
-    #
-    #     self.data = self.variables_invjuzi.merge(self.variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
+    def gen_data(self, normalize = True):
+        """Merge variables and merge investors data"""
+
+        self.data = self.variables_invjuzi.merge(self.variables_geshang, left_on='投资机构名称', right_on='机构简称', how='left')
 
     def delete_foreign(self):
         """Delete foreign investors"""
