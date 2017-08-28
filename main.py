@@ -11,7 +11,7 @@ TRAIN_SIZE = 16000  # maxnum 19836 in data
 BATCH_SIZE = 32
 CROSS_DIM = 6
 STEPS_PER_EPCHO = 5000
-EPCHOS = 10
+EPCHOS = 2
 
 ENCODING_DIM = 50  # size of our encoded representations, assuming the input is 784 floats
 NB_EPOCH_AUTOENCODER = 50
@@ -58,6 +58,7 @@ if __name__ == '__main__':
 
     main_model = model.branchmodel(company_shape, investor_shape, CROSS_DIM)
     main_model.fitmodel(observation.gen_observation(), STEPS_PER_EPCHO, EPCHOS)
+    main_model.savemodel('branchmodel-2')
 
 
 ##    observation.gen_observation()

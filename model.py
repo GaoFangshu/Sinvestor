@@ -46,10 +46,38 @@ class branchmodel():
         self.model.compile(optimizer='adadelta', loss='binary_crossentropy')
 
         self.model.summary()
-        plot_model(self.model, to_file='./model/branchmodel.png')
+        plot_model(self.model, to_file='./model/picture/branchmodel.png')
+
+    def savemodel(self, name, path='./model/savedmodel/'):
+        self.model.save('%s%s.h5'%(path, name))
 
     def fitmodel(self, data, steps, epochs, max_q_size=100):
         self.model.fit_generator(data, steps_per_epoch=steps, epochs=epochs, max_q_size=100)
         
 
-        
+class sequentialmodel():
+
+    def __init__(self, input_company_dim, input_investor_dim, input_cross_dim):
+        input_company = Input(shape=(input_company_dim,), name='input_company')
+        input_investor = Input(shape=(input_investor_dim,), name='input_investor')
+        input_cross = Input(shape=(input_cross_dim,), name='input_cross')
+
+        merged_layer = concatenate([input_company, input_investor, input_cross], axis=-1)
+
+        dense_layer_1 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//3, activation='relu')(merged_layer)
+        dense_layer_2 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//9, activation='relu')(dense_layer_1)
+        dense_layer_3 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//27, activation='relu')(dense_layer_2)
+
+        output_dense = Dense(1, activation='sigmoid', name='output_dense')(dense_layer_3)
+
+        self.model = Model(input=[input_company, input_investor, input_cross], output=output_dense)
+        self.model.compile(optimizer='adadelta', loss='binary_crossentropy')
+
+        self.model.summary()
+        plot_model(self.model, to_file='./model/picture/sequentialmodel.png')
+
+    def savemodel(self, name, path='./model/savedmodel/'):
+        self.model.save('%s%s.h5'%(path, name))
+
+    def fitmodel(self, data, steps, epochs, max_q_size=100):
+        self.model.fit_generator(data, steps_per_epoch=steps, epochs=epochs, max_q_size=100)        
