@@ -4,6 +4,12 @@ import numpy as np
 import data_proc
 import pandas as pd
 import multiprocessing
+import datetime
+
+
+WORKER_NUM = 50
+
+
 
 def paste_string(data, name, num_start, num_end):
     string = ''
@@ -125,7 +131,6 @@ class Observation:
             # print(random_invest)
             sample = [self.get_sample(index_random_company[i], index_random_invest[i]) for i in range(self.batch_size_main)]
             queue.put(pd.DataFrame([np.concatenate([i[0], i[1], i[2], i[3]]) for i in sample]))
-            print('1')
 
 
 def writeinworker(queue, path='./data/saved_data/'):
@@ -136,10 +141,6 @@ def writeinworker(queue, path='./data/saved_data/'):
         else:
             continue
     
-
-
-WORKER_NUM = 10
-
 
 
 if __name__ == '__main__':
@@ -199,10 +200,10 @@ if __name__ == '__main__':
             data_frame = queue_data.get(True)
             savedata = pd.concat([savedata, data_frame])
             count += 1
-            print('-- %d rows get it'%(count * 30))
+            print('%s : -- %d rows get it'%(datetime.datetime.now() ,(count * 30)))
             if count % 100 == 0:
                 queue_writein.put(savedata)
-                print('---- %d rows writein'%(count * 30))
+                print('%s : ---- %d rows writein'%(datetime.datetime.now() ,(count * 30)))
         else:
             continue
             

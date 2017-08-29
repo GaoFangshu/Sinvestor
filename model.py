@@ -63,6 +63,12 @@ class branchmodel():
 
     def fitmodel(self, data, steps, epochs, max_q_size=100):
         self.model.fit_generator(data, steps_per_epoch=steps, epochs=epochs, max_q_size=100)
+
+    def fitmodel_data(self, data, epcohs, batch_size, shuffle=1):
+        self.model.fit(data.x_train, data.y_train,
+                       nb.epoch=epochs,
+                       batch_size=batch_size,
+                       shuffle=shuffle)
         
 
 class sequentialmodel():
