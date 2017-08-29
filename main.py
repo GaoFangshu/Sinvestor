@@ -56,9 +56,10 @@ if __name__ == '__main__':
     company_shape = observation.data_companies.shape[1]
     investor_shape = observation.data_investors.shape[1]
 
-    main_model = model.branchmodel(company_shape, investor_shape, CROSS_DIM)
+##    main_model = model.branchmodel(company_shape, investor_shape, CROSS_DIM)
+    main_model = model.branchmodel(company_shape, investor_shape, CROSS_DIM, load_model_flag='branchmodel-2')
     main_model.fitmodel(observation.gen_observation(), STEPS_PER_EPCHO, EPCHOS)
-    main_model.savemodel('branchmodel-2')
+    main_model.savemodel('branchmodel-4')
 
 
 ##    observation.gen_observation()
