@@ -5,6 +5,7 @@ import data_proc
 import pandas as pd
 import multiprocessing
 import datetime
+import os
 
 
 WORKER_NUM = 50
@@ -122,24 +123,43 @@ class Observation:
             yield ({'input_company':np.asarray([i[0] for i in sample]), 'input_investor':np.asarray([i[1] for i in sample]),
                     'input_cross':np.asarray([i[2] for i in sample])}, {'output_dense':np.asarray([i[3] for i in sample])})
 
-    def save_observation(self, queue):
+    def save_observation(self, queue, queue_info):
+        mypid = os.getpid()
+        try:
+            while 1:
+                random_company = [randint(0, self.train_size - 1) for i in range(self.batch_size_main)]
+                index_random_company = self.data_companies.index[random_company]
+                random_invest = [randint(0, len(self.data_investors) - 1) for i in range(self.batch_size_main)]
+                index_random_invest = self.data_investors.index[random_invest]
+                # print(random_invest)
+                sample = [self.get_sample(index_random_company[i], index_random_invest[i]) for i in range(self.batch_size_main)]
+                queue.put(pd.DataFrame([np.concatenate([i[0], i[1], i[2], i[3]]) for i in sample]))
+        except Exception as err:
+            queue_info.put('Worker %s : ERROR : %s'%(mypid, str(err)))
+
+
+def writeinworker(queue, queue_info, path='./data/saved_data/'):
+    mypid = os.getpid()
+    
+    file_list = []
+    for parent,dirnames,filenames in os.walk(path):
+        for filename in filenames:
+            file_list.append(filename)
+    max_count = 0
+    for file in file_list:
+        if int(file[file.find('data_')+5:-4]) >= max_count:
+            max_count = int(file[file.find('data_')+5:-4])
+            
+    try:
         while 1:
-            random_company = [randint(0, self.train_size - 1) for i in range(self.batch_size_main)]
-            index_random_company = self.data_companies.index[random_company]
-            random_invest = [randint(0, len(self.data_investors) - 1) for i in range(self.batch_size_main)]
-            index_random_invest = self.data_investors.index[random_invest]
-            # print(random_invest)
-            sample = [self.get_sample(index_random_company[i], index_random_invest[i]) for i in range(self.batch_size_main)]
-            queue.put(pd.DataFrame([np.concatenate([i[0], i[1], i[2], i[3]]) for i in sample]))
-
-
-def writeinworker(queue, path='./data/saved_data/'):
-    while 1:
-        if not queue.empty():
-            data = queue.get(True)
-            data.to_csv('%ssaved_data.csv'%path, index=0)
-        else:
-            continue
+            if not queue.empty():
+                data = queue.get(True)
+                data.to_csv('%ssaved_data_%d.csv'%(path, (max_count+1)), index=0)
+                max_count += 1
+            else:
+                continue
+    except Exception as err:
+        queue_info.put('Writer %s : ERROR : %s'%(mypid, str(err)))
     
 
 
@@ -177,17 +197,18 @@ if __name__ == '__main__':
     manager = multiprocessing.Manager()
 
     queue_data = manager.Queue()
+    queue_info = manager.Queue()
     queue_writein = manager.Queue()
 
     print('■■■■■■■ 多进程准备完毕 ■■■■■■■')
 
     for worker in range(WORKER_NUM):
-        pool.apply_async(observation.save_observation, args=(queue_data,))
+        pool.apply_async(observation.save_observation, args=(queue_data, queue_info))
     pool.close()
 
     print('■■■■■■■ 工作进程准备完毕 ■■■■■■■')
 
-    writein = multiprocessing.Process(target=writeinworker, args=(queue_writein,))
+    writein = multiprocessing.Process(target=writeinworker, args=(queue_writein, queue_info))
     writein.start()
 
     print('■■■■■■■ 写入进程准备完毕 ■■■■■■■')
@@ -200,12 +221,16 @@ if __name__ == '__main__':
             data_frame = queue_data.get(True)
             savedata = pd.concat([savedata, data_frame])
             count += 1
-            print('%s : -- %d rows get it'%(datetime.datetime.now() ,(count * 30)))
-            if count % 100 == 0:
+            print('%s : -- %d rows get it, qsize = %d'%(datetime.datetime.now(), (count * 30), queue_data.qsize()))
+            if count % 600 == 0:
                 queue_writein.put(savedata)
                 print('%s : ---- %d rows writein'%(datetime.datetime.now() ,(count * 30)))
+                savedata = pd.DataFrame()
+        elif not queue_info.empty():
+            print(queue_info.get(True))
         else:
             continue
+
             
         
 
