@@ -295,18 +295,23 @@ class DataCompany:
         公司规模：获得数据(人)，"不明确"太多，舍去
         估值：币种问题、换算问题"""
 
-    def __init__(self):
+    def __init__(self, predict=0):
         """Initialize companies data to be used in model."""
         self.data = pd.DataFrame()
+        self.predict = predict
 
     def import_data_itjuzi(self, dir='./data/IT橘子创业公司信息.txt'):
         """Import Itjuzi rawdata, dir is directory of data file."""
+        if self.predict==1:
+            dir='./output/setting/IT橘子创业公司信息.txt'
         self.data_itjuzi = pd.read_csv(dir, sep='\t', encoding='gbk')  # 54858 rows x 150 columns
         self.data_itjuzi = self.data_itjuzi[self.data_itjuzi['投资机构1'] != '-']  # 19836 rows x 150 columns
         self.data_itjuzi = self.data_itjuzi.set_index('id')  # 19836 rows x 149 columns 此时id不连续
 
     def import_data_radar(self, dir='./data/IT橘子雷达公司估值.txt'):
         """Import Itjuzi radar rawdata, dir is directory of data file."""
+        if self.predict==1:
+            dir='./output/setting/IT橘子雷达公司估值.txt'
         self.data_radar = pd.read_csv(dir, sep='\t', encoding='gbk')  # 54975 rows x 4 columns
         self.data_radar = self.data_radar.set_index('id')  # 54975 rows x 3 columns 变量命名与data_itjuzi一致，此时id不连续
 

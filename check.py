@@ -99,7 +99,8 @@ class Observation:
                       self.data_investors.loc[i_random_invest],
                       np.array([self.relation_work, self.relation_edu, self.percent_class_first,
                                self.percent_round,self.competitor[0], self.competitor[1]]),
-                     np.array([1])]
+                     np.array([1]),
+                     np.array([i_random_invest])]
             # print('Sample prepared (1)')
             return sample
         else:
@@ -108,9 +109,17 @@ class Observation:
                       self.data_investors.loc[i_random_invest],
                       np.array([self.relation_work, self.relation_edu, self.percent_class_first,
                                self.percent_round,self.competitor[0], self.competitor[1]]),
-                     np.array([0])]
+                     np.array([0]),
+                     np.array([i_random_invest])]
             # print('Sample prepared (0)')
             return sample
+
+    def predict_data(self):
+        invest = list[self.data_investors.index]
+        company = [self.data_companies.index[-1] for i in range(self.data_investors.index)]
+
+        sample = [self.get_sample(company[i], invest[i]) for i in range(len(self.data_investors))]
+        return pd.DataFrame([np.concatenate([i[0], i[1], i[2], i[4]]) for i in sample])
 
     def gen_observation(self):
         while 1:
@@ -222,7 +231,7 @@ if __name__ == '__main__':
             savedata = pd.concat([savedata, data_frame])
             count += 1
             print('%s : -- %d rows get it, qsize = %d'%(datetime.datetime.now(), (count * 30), queue_data.qsize()))
-            if count % 600 == 0:
+            if count % 100 == 0:
                 queue_writein.put(savedata)
                 print('%s : ---- %d rows writein'%(datetime.datetime.now() ,(count * 30)))
                 savedata = pd.DataFrame()

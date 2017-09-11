@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import multiprocessing
 import os
@@ -5,7 +7,10 @@ import os
 def getdata(id, queue, info_queue):
     # 子进程函数，用于打开文件读取正样本抽取负样本
     info_queue.put('Worker %d: Begin work!'%id)
-    data = pd.read_csv('./data/saved_data/saved_data_%d.csv'%id)
+    try:
+        data = pd.read_csv('./data/saved_data/saved_data_%d.csv'%id)
+    except:
+        return
     data_1 = data[data['2842']==1]
     data_2 = data[data['2842'] == 0].sample(len(data_1)*9)
     data = pd.concat([data_1, data_2])
