@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
+import numpy as np
 import data_proc
 import check
 from keras.models import load_model
 
-MODEL_NAME = ''
+MODEL_NAME = 'branchmodel-10'
 
 class preparedata():
     """准备提取需要预测的公司信息并合成新数据集"""
@@ -41,14 +42,13 @@ class preparedata():
         print('----------- 保存公司信息完毕 -----------')
 
 def getname(data, companies, output):
-	name_list = []
-	for i in data.index:
-		name_list.append(companies.loc[int(data.loc[i])]['投资机构名称'])
-	data = pd.DataFrame({'name':name_list, 'output':output})
-	data = data.sort_index(axis = 0,ascending = False,by = 'output') 
-	data.reset_index()
-	return data
-
+    name_list = []
+    for i in data.index:
+        name_list.append(companies.loc[int(data.loc[i])]['投资机构名称'])
+    data = pd.DataFrame({'name':name_list, 'output':output})
+    data = data.sort_index(axis = 0,ascending = False,by = 'output') 
+    data = data.reset_index()
+    return data
 
 if __name__ == '__main__':
     preparedata()
@@ -77,29 +77,23 @@ if __name__ == '__main__':
                               data_investors.model_data,
                               data_companies.data_itjuzi,
                               data_investors.data_invjuzi,
-                              train_size=TRAIN_SIZE,
-                              batch_size_main=BATCH_SIZE)
-    print('■■■■■■■ 预测数据已经准备 ■■■■■■■')
+                              train_size=19836,
+                              batch_size_main=32)
+    print('■■■■■■■ 预测数据已经准备，计算预测数据，请等待 ■■■■■■■')
 
     data = observation.predict_data()
-    model = load_model('%s.h5'%MODEL_NAME)
-    print('■■■■■■■ 模型读取完成，计算预测数据，请等待 ■■■■■■■')
+    print('■■■■■■■ 预测数据计算完成，开始加载模型 ■■■■■■■')
+    
+    model = load_model('./model/savedmodel/%s.h5'%MODEL_NAME)
+    print('■■■■■■■ 模型加载成功，开始进行预测，请稍等 ■■■■■■■')
 
-    output = model.predict(data[:-1])
-    print('■■■■■■■ 预测数据计算完成 ■■■■■■■')
+    output = model.predict([np.asarray(data.iloc[:,:1384]), np.asarray(data.iloc[:,1384:2836]), np.asarray(data.iloc[:,2836:-1])])
+    print('■■■■■■■ 预测结果计算完成 ■■■■■■■')
 
     output = output.tolist()
-
     name = data.iloc[:,-1:]
     
-    data = getname(data, data_investors.data_invjuzi, output)
+    data = getname(name, data_investors.data_invjuzi, output)
     data.to_csv('./output/output.csv')
     print('■■■■■■■ 数据输出完毕 ■■■■■■■')
-
-
-
-
-
-
-
 

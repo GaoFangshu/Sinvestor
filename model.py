@@ -35,7 +35,7 @@ class branchmodel():
 
     def __init__(self, input_company_dim, input_investor_dim, input_cross_dim, load_model_flag=0):
         if load_model_flag:
-            self.model = load_model('./model/savedmodel/%s.h5'%load_model_flag)
+            self.model = load_model('./model/savedmodel/branchmodel-%s.h5'%load_model_flag)
             self.model.summary()
         else:
             input_company = Input(shape=(input_company_dim,), name='input_company')
@@ -74,29 +74,40 @@ class branchmodel():
 
 class sequentialmodel():
 
-    def __init__(self, input_company_dim, input_investor_dim, input_cross_dim):
-        input_company = Input(shape=(input_company_dim,), name='input_company')
-        input_investor = Input(shape=(input_investor_dim,), name='input_investor')
-        input_cross = Input(shape=(input_cross_dim,), name='input_cross')
+    def __init__(self, input_company_dim, input_investor_dim, input_cross_dim, load_model_flag=0):
+        if load_model_flag:
+            self.model = load_model('./model/savedmodel/sequentialmodel-%s.h5'%load_model_flag)
+            self.model.summary()
+        else:
+            input_company = Input(shape=(input_company_dim,), name='input_company')
+            input_investor = Input(shape=(input_investor_dim,), name='input_investor')
+            input_cross = Input(shape=(input_cross_dim,), name='input_cross')
 
-        merged_layer = concatenate([input_company, input_investor, input_cross], axis=-1)
+            merged_layer = concatenate([input_company, input_investor, input_cross], axis=-1)
 
-        dense_layer_1 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//3, activation='relu')(merged_layer)
-        dense_layer_2 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//9, activation='relu')(dense_layer_1)
-        dense_layer_3 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//27, activation='relu')(dense_layer_2)
+            dense_layer_1 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//3, activation='relu')(merged_layer)
+            dense_layer_2 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//9, activation='relu')(dense_layer_1)
+            dense_layer_3 = Dense((input_company_dim + input_investor_dim + input_cross_dim)//27, activation='relu')(dense_layer_2)
 
-        output_dense = Dense(1, activation='sigmoid', name='output_dense')(dense_layer_3)
+            output_dense = Dense(1, activation='sigmoid', name='output_dense')(dense_layer_3)
 
-        self.model = Model(input=[input_company, input_investor, input_cross], output=output_dense)
-        self.model.compile(optimizer='adadelta',
-                           loss='binary_crossentropy',
-                           metrics=['accuracy', metrics.precision, metrics.recall, metrics.fmeasure])
+            self.model = Model(input=[input_company, input_investor, input_cross], output=output_dense)
+            self.model.compile(optimizer='adadelta',
+                               loss='binary_crossentropy',
+                               metrics=['accuracy', metrics.precision, metrics.recall, metrics.fmeasure])
 
-        self.model.summary()
-        plot_model(self.model, to_file='./model/picture/sequentialmodel.png')
+            self.model.summary()
+            plot_model(self.model, to_file='./model/picture/sequentialmodel.png')
 
     def savemodel(self, name, path='./model/savedmodel/'):
         self.model.save('%s%s.h5'%(path, name))
 
     def fitmodel(self, data, steps, epochs, max_q_size=100):
         self.model.fit_generator(data, steps_per_epoch=steps, epochs=epochs, max_q_size=100)        
+
+    def fitmodel_data(self, data, epochs, batch_size, shuffle=1):
+        self.model.fit(data.x_train, data.y_train,
+                       epochs=epochs,
+                       batch_size=batch_size,
+                       shuffle=shuffle,
+                       class_weight={1:0.9,0:0.1})

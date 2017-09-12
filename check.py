@@ -115,10 +115,18 @@ class Observation:
             return sample
 
     def predict_data(self):
-        invest = list[self.data_investors.index]
-        company = [self.data_companies.index[-1] for i in range(self.data_investors.index)]
+        invest = [i for i in self.data_investors.index]
+        company = [self.data_companies.index[-1] for i in self.data_investors.index]
 
-        sample = [self.get_sample(company[i], invest[i]) for i in range(len(self.data_investors))]
+        sample = []
+        count = 0
+        for i in range(len(self.data_investors)):
+            sample.append(self.get_sample(company[i], invest[i]))
+            count += 1
+            if count%10 == 0:
+                print('----------- %d/%d data have been processed -----------'%(count,len(self.data_investors)))
+        print('----------- %d/%d data have been processed -----------'%(count,len(self.data_investors)))
+
         return pd.DataFrame([np.concatenate([i[0], i[1], i[2], i[4]]) for i in sample])
 
     def gen_observation(self):
@@ -197,7 +205,7 @@ if __name__ == '__main__':
                               data_investors.model_data,
                               data_companies.data_itjuzi,
                               data_investors.data_invjuzi,
-                              train_size=3000,
+                              train_size=19836,
                               batch_size_main=30)
     print('■■■■■■■ 训练数据准备生成 ■■■■■■■')
 
